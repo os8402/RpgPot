@@ -27,6 +27,14 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	void Attack();
+	void AttackCheck();
+
+	UFUNCTION()
+	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInteruppted);
+
+
+
 private:
 
 	UPROPERTY(VisibleAnywhere)
@@ -35,6 +43,10 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	class USpringArmComponent* _SpringArm;
 
+	UPROPERTY(VisibleAnywhere)
+	class UM_Anim* _Anim;
+
+private:
 
 	UPROPERTY(VisibleAnywhere, Category = Pawn)
 	bool _bAttacking;

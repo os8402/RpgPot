@@ -2,6 +2,7 @@
 
 
 #include "M_PlayerUnit.h"
+#include "M_Anim.h"
 #include <Components/CapsuleComponent.h>
 #include <GameFramework/CharacterMovementComponent.h>
 #include <GameFramework/SpringArmComponent.h>
@@ -33,7 +34,7 @@ AM_PlayerUnit::AM_PlayerUnit()
 	_SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	_SpringArm->SetupAttachment(RootComponent);
 	_SpringArm->SetUsingAbsoluteRotation(true); // Don't want arm to rotate when character does
-	_SpringArm->TargetArmLength = 800.f;
+	_SpringArm->TargetArmLength = 700.f;
 	_SpringArm->SetRelativeRotation(FRotator(-60.f, 45.f, 0.f));
 	_SpringArm->bDoCollisionTest = false; // Don't want to pull camera in when it collides with level
 
@@ -47,6 +48,17 @@ AM_PlayerUnit::AM_PlayerUnit()
 void AM_PlayerUnit::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
+
+	_Anim = Cast<UM_Anim>(GetMesh()->GetAnimInstance());
+
+	if (_Anim)
+	{
+		_Anim->OnMontageEnded.AddDynamic(this, &AM_PlayerUnit::OnAttackMontageEnded);
+		_Anim->GetOnAttackHit().AddUObject(this, &AM_PlayerUnit::AttackCheck);
+
+	}
+	
+
 }
 
 // Called when the game starts or when spawned
@@ -68,5 +80,28 @@ void AM_PlayerUnit::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
+	PlayerInputComponent->BindAction("Attack" ,IE_Pressed, this,  &AM_PlayerUnit::Attack);
+
+}
+
+void AM_PlayerUnit::Attack()
+{
+	if (_bAttacking)
+		return;
+
+	_Anim->PlayAttackMontage();
+
+	_bAttacking = true;
+
+}
+
+void AM_PlayerUnit::AttackCheck()
+{
+	UE_LOG(LogTemp, Warning, TEXT("Hit Check"));
+}
+
+void AM_PlayerUnit::OnAttackMontageEnded(UAnimMontage* Montage, bool bInteruppted)
+{
+	_bAttacking = false;
 }
 
