@@ -3,12 +3,15 @@
 
 #include "M_PlayerUnit.h"
 #include "M_Anim.h"
+#include "M_UnitStat.h"
+#include "M_UnitWidget.h"
 #include <Components/CapsuleComponent.h>
 #include <GameFramework/CharacterMovementComponent.h>
 #include <GameFramework/SpringArmComponent.h>
 #include <Camera/CameraComponent.h>
 #include <Components/WidgetComponent.h>
 #include <DrawDebugHelpers.h>
+
 
 
 // Sets default values
@@ -33,7 +36,7 @@ AM_PlayerUnit::AM_PlayerUnit()
 	GetCharacterMovement()->bSnapToPlaneAtStart = true;
 
 	// Create a camera boom...
-	_SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
+	_SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SPRINGARM"));
 	_SpringArm->SetupAttachment(RootComponent);
 	_SpringArm->SetUsingAbsoluteRotation(true); // Don't want arm to rotate when character does
 	_SpringArm->TargetArmLength = 700.f;
@@ -41,9 +44,12 @@ AM_PlayerUnit::AM_PlayerUnit()
 	_SpringArm->bDoCollisionTest = false; // Don't want to pull camera in when it collides with level
 
 	// Create a camera...
-	_Cam = CreateDefaultSubobject<UCameraComponent>(TEXT("TopDownCamera"));
+	_Cam = CreateDefaultSubobject<UCameraComponent>(TEXT("CAMERA"));
 	_Cam->SetupAttachment(_SpringArm, USpringArmComponent::SocketName);
 	_Cam->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
+
+
+	_Stat = CreateDefaultSubobject<UM_UnitStat>(TEXT("STAT"));
 
 	_HpBar = CreateDefaultSubobject<UWidgetComponent>(TEXT("HP_BAR"));
 	_HpBar->SetupAttachment(GetMesh());
@@ -57,6 +63,8 @@ AM_PlayerUnit::AM_PlayerUnit()
 		_HpBar->SetWidgetClass(UW.Class);
 		_HpBar->SetDrawSize(FVector2D(250.f, 50.f));
 	}
+
+
 	
 }
 
@@ -74,16 +82,21 @@ void AM_PlayerUnit::PostInitializeComponents()
 	}
 	
 	_HpBar->InitWidget();
+
+	auto HpWidget = Cast<UM_UnitWidget>(_HpBar->GetUserWidgetObject());
+
+	if (HpWidget != nullptr)
+		HpWidget->BindHp(_Stat);
+	else
+		UE_LOG(LogTemp, Warning, TEXT("Failed to Bind"));
+	
+
 }
 
 // Called when the game starts or when spawned
 void AM_PlayerUnit::BeginPlay()
 {
-	Super::BeginPlay();
-
-
-	auto MyController = Cast<AController>(GetController());
-	
+	Super::BeginPlay();	
 }
 
 // Called every frame
@@ -151,14 +164,21 @@ void AM_PlayerUnit::AttackCheck()
 	{
 		UE_LOG(LogTemp, Log, TEXT("Hit Actor %s"), *HitResult.Actor->GetName());
 
-		//FDamageEvent DamageEvent;
+		FDamageEvent DamageEvent;
 
-		//HitResult.Actor->TakeDamage(Stat->GetAttack(), DamageEvent, GetController(), this);
+		HitResult.Actor->TakeDamage(_Stat->GetAttack(), DamageEvent, GetController(), this);
 	}
 }
 
 void AM_PlayerUnit::OnAttackMontageEnded(UAnimMontage* Montage, bool bInteruppted)
 {
 	_bAttacking = false;
+}
+
+float AM_PlayerUnit::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	_Stat->OnAttacked(Damage);
+
+	return Damage;
 }
 

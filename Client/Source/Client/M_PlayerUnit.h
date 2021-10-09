@@ -33,6 +33,7 @@ public:
 	UFUNCTION()
 	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInteruppted);
 
+	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
 private:
 
@@ -47,6 +48,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 	class UWidgetComponent* _HpBar;
+
+	UPROPERTY(VisibleAnywhere)
+	class UM_UnitStat* _Stat;
 
 
 private:
