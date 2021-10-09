@@ -34,7 +34,6 @@ public:
 	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInteruppted);
 
 
-
 private:
 
 	UPROPERTY(VisibleAnywhere)

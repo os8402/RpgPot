@@ -2,6 +2,7 @@
 
 
 #include "M_GameModeBase.h"
+#include "M_Controller.h"
 #include "M_PlayerUnit.h"
 
 AM_GameModeBase::AM_GameModeBase()
@@ -13,4 +14,13 @@ AM_GameModeBase::AM_GameModeBase()
 		DefaultPawnClass = MP.Class;
 
 	}
+
+	static ConstructorHelpers::FClassFinder<AM_Controller> AM(TEXT("Class'/Script/Client.M_Controller'"));
+
+
+	if (AM.Succeeded())
+	{
+		PlayerControllerClass = AM.Class;
+	}
+
 }

@@ -42,7 +42,7 @@ AM_PlayerUnit::AM_PlayerUnit()
 	_Cam = CreateDefaultSubobject<UCameraComponent>(TEXT("TopDownCamera"));
 	_Cam->SetupAttachment(_SpringArm, USpringArmComponent::SocketName);
 	_Cam->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
-
+	
 }
 
 void AM_PlayerUnit::PostInitializeComponents()
@@ -65,6 +65,9 @@ void AM_PlayerUnit::PostInitializeComponents()
 void AM_PlayerUnit::BeginPlay()
 {
 	Super::BeginPlay();
+
+
+	auto MyController = Cast<AController>(GetController());
 	
 }
 
@@ -79,6 +82,7 @@ void AM_PlayerUnit::Tick(float DeltaTime)
 void AM_PlayerUnit::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
 
 	PlayerInputComponent->BindAction("Attack" ,IE_Pressed, this,  &AM_PlayerUnit::Attack);
 
