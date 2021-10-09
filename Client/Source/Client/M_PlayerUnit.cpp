@@ -7,6 +7,7 @@
 #include <GameFramework/CharacterMovementComponent.h>
 #include <GameFramework/SpringArmComponent.h>
 #include <Camera/CameraComponent.h>
+#include <Components/WidgetComponent.h>
 
 
 // Sets default values
@@ -42,6 +43,19 @@ AM_PlayerUnit::AM_PlayerUnit()
 	_Cam = CreateDefaultSubobject<UCameraComponent>(TEXT("TopDownCamera"));
 	_Cam->SetupAttachment(_SpringArm, USpringArmComponent::SocketName);
 	_Cam->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
+
+	_HpBar = CreateDefaultSubobject<UWidgetComponent>(TEXT("HP_BAR"));
+	_HpBar->SetupAttachment(GetMesh());
+	_HpBar->SetWidgetSpace(EWidgetSpace::Screen);
+	_HpBar->SetRelativeLocation(FVector(0.f, 0.f, 220.f));
+
+	static ConstructorHelpers::FClassFinder <UUserWidget> UW(TEXT("WidgetBlueprint'/Game/Resources/UI/WBP_HpBar.WBP_HpBar_C'"));
+
+	if (UW.Succeeded())
+	{
+		_HpBar->SetWidgetClass(UW.Class);
+		_HpBar->SetDrawSize(FVector2D(200.f, 50.f));
+	}
 	
 }
 
@@ -58,7 +72,7 @@ void AM_PlayerUnit::PostInitializeComponents()
 
 	}
 	
-
+	_HpBar->InitWidget();
 }
 
 // Called when the game starts or when spawned

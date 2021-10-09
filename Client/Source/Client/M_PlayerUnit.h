@@ -45,10 +45,18 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	class UM_Anim* _Anim;
 
+	UPROPERTY(VisibleAnywhere)
+	class UWidgetComponent* _HpBar;
+
+
 private:
 
 	UPROPERTY(VisibleAnywhere, Category = Pawn)
 	bool _bAttacking;
 
+	UPROPERTY(VisibleAnywhere, Category = Pawn)
+	int32 _Hp;
 
+	UPROPERTY(VisibleAnywhere, Category = Pawn)
+	int32 _MaxHp;
 };
