@@ -25,11 +25,12 @@ public:
 
 
 private:
+
 	UFUNCTION()
 	void AnimNotify_AttackHit();
 
-public:
-	FOnAttackHit GetOnAttackHit() { return OnAttackHit; }
+
+	//FOnAttackHit GetOnAttackHit() { return OnAttackHit; }
 	
 private:
 
@@ -41,7 +42,7 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Pawn, Meta = (AllowPrivateAccess = true))
 	float _Speed;
 
-
+public:
 	FOnAttackHit OnAttackHit;
 
 };
