@@ -52,7 +52,6 @@ void AM_Controller::SetNewDestination(const FVector Dest)
 		{
 			UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, Dest);
 		}
-	
 
 	}
 }

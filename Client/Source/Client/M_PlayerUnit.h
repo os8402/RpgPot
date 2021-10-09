@@ -30,6 +30,8 @@ public:
 	void Attack();
 	void AttackCheck();
 
+	void Dead();
+
 	UFUNCTION()
 	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInteruppted);
 
@@ -57,6 +59,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = Pawn)
 	bool _bAttacking;
+
+	UPROPERTY(VisibleAnywhere, Category = Pawn)
+	bool _bDead;
 
 	UPROPERTY(VisibleAnywhere, Category = Pawn)
 	int32 _Hp;

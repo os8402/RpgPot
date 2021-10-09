@@ -64,8 +64,6 @@ AM_PlayerUnit::AM_PlayerUnit()
 		_HpBar->SetDrawSize(FVector2D(250.f, 50.f));
 	}
 
-
-	
 }
 
 void AM_PlayerUnit::PostInitializeComponents()
@@ -80,16 +78,16 @@ void AM_PlayerUnit::PostInitializeComponents()
 		_Anim->OnAttackHit.AddUObject(this, &AM_PlayerUnit::AttackCheck);
 
 	}
+
+	if (_Stat)
+		_Stat->OnDead.AddUObject(this, &AM_PlayerUnit::Dead);
 	
 	_HpBar->InitWidget();
 
 	auto HpWidget = Cast<UM_UnitWidget>(_HpBar->GetUserWidgetObject());
 
-	if (HpWidget != nullptr)
+	if (HpWidget)
 		HpWidget->BindHp(_Stat);
-	else
-		UE_LOG(LogTemp, Warning, TEXT("Failed to Bind"));
-	
 
 }
 
@@ -103,7 +101,7 @@ void AM_PlayerUnit::BeginPlay()
 void AM_PlayerUnit::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	
 }
 
 // Called to bind functionality to input
@@ -111,14 +109,13 @@ void AM_PlayerUnit::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-
 	PlayerInputComponent->BindAction("Attack" ,IE_Pressed, this,  &AM_PlayerUnit::Attack);
 
 }
 
 void AM_PlayerUnit::Attack()
 {
-	if (_bAttacking)
+	if (_bAttacking || _bDead)
 		return;
 
 	_Anim->PlayAttackMontage();
@@ -170,6 +167,12 @@ void AM_PlayerUnit::AttackCheck()
 	}
 }
 
+void AM_PlayerUnit::Dead()
+{
+	_bDead = true;
+	_Anim->PlayDeadAnim();
+}
+
 void AM_PlayerUnit::OnAttackMontageEnded(UAnimMontage* Montage, bool bInteruppted)
 {
 	_bAttacking = false;
@@ -181,4 +184,6 @@ float AM_PlayerUnit::TakeDamage(float Damage, struct FDamageEvent const& DamageE
 
 	return Damage;
 }
+
+
 

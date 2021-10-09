@@ -23,15 +23,13 @@ public:
 
 	void PlayAttackMontage();
 
+	void PlayDeadAnim();
 
 private:
 
 	UFUNCTION()
 	void AnimNotify_AttackHit();
 
-
-	//FOnAttackHit GetOnAttackHit() { return OnAttackHit; }
-	
 private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Pawn, Meta = (AllowPrivateAccess = true))
@@ -41,6 +39,9 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Pawn, Meta = (AllowPrivateAccess = true))
 	float _Speed;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Pawn, Meta = (AllowPrivateAccess = true))
+	bool _bDead;
 
 public:
 	FOnAttackHit OnAttackHit;

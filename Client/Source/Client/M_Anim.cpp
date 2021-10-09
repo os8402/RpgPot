@@ -33,6 +33,11 @@ void UM_Anim::PlayAttackMontage()
 	Montage_Play(_AttackMontage, 1.f);
 }
 
+void UM_Anim::PlayDeadAnim()
+{
+	_bDead = true;
+}
+
 void UM_Anim::AnimNotify_AttackHit()
 {
 	OnAttackHit.Broadcast();

@@ -58,9 +58,14 @@ void UM_UnitStat::SetLevel(int32 NewLevel)
 
 void UM_UnitStat::SetHp(int32 NewHp)
 {
+	
 	_Hp = NewHp;
-	if (_Hp < 0)
-		_Hp = 0;
+	_Hp = FMath::Max<int32>(0, _Hp);
+
+	if (_Hp == 0)
+	{
+		OnDead.Broadcast();
+	}
 
 	OnHpChanged.Broadcast();
 }

@@ -7,6 +7,7 @@
 #include "M_UnitStat.generated.h"
 
 DECLARE_MULTICAST_DELEGATE(FOnHpChanged);
+DECLARE_MULTICAST_DELEGATE(FOnDead);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class CLIENT_API UM_UnitStat : public UActorComponent
@@ -32,7 +33,7 @@ public:
 	int32 GetLevel() { return _Level; }
 	int32 GetHp() { return _Hp; }
 	int32 GetMaxHp() { return _MaxHp; }
-	float GetHpRatio() { return _Hp / (float)_MaxHp; }
+	float GetHpRatio() { return (_Hp > 0 ? _Hp / (float)_MaxHp : 0); }
 	int32 GetAttack() { return _Attack; }
 
 private:
@@ -48,5 +49,6 @@ private:
 
 public:
 	FOnHpChanged OnHpChanged; 
+	FOnDead OnDead;
 		
 };
