@@ -5,6 +5,7 @@
 #include "M_Anim.h"
 #include "M_UnitStat.h"
 #include "M_UnitWidget.h"
+#include "M_AI.h"
 #include <Components/CapsuleComponent.h>
 #include <GameFramework/CharacterMovementComponent.h>
 #include <GameFramework/SpringArmComponent.h>
@@ -63,6 +64,9 @@ AM_PlayerUnit::AM_PlayerUnit()
 		_HpBar->SetWidgetClass(UW.Class);
 		_HpBar->SetDrawSize(FVector2D(250.f, 50.f));
 	}
+
+	AIControllerClass = AM_AI::StaticClass();
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
 
 }
 
@@ -176,6 +180,7 @@ void AM_PlayerUnit::Dead()
 void AM_PlayerUnit::OnAttackMontageEnded(UAnimMontage* Montage, bool bInteruppted)
 {
 	_bAttacking = false;
+	OnAttackEnd.Broadcast();
 }
 
 float AM_PlayerUnit::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)

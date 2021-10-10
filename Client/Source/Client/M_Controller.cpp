@@ -32,11 +32,9 @@ void AM_Controller::MoveToMouseCursor()
 	FHitResult Hit;
 	GetHitResultUnderCursor(ECC_Visibility, false, Hit);
 
-	_Target = Cast<ACharacter>(Hit.Actor);
-
 	if (Hit.bBlockingHit)
 	{
-		SetNewDestination(Hit.ImpactPoint);
+		SetNewDestination(Hit.ImpactPoint);	
 	}
 }
 

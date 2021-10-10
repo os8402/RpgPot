@@ -31,6 +31,7 @@ void UM_Anim::NativeUpdateAnimation(float DeltaSeconds)
 void UM_Anim::PlayAttackMontage()
 {
 	Montage_Play(_AttackMontage, 1.f);
+
 }
 
 void UM_Anim::PlayDeadAnim()

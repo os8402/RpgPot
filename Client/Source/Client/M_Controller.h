@@ -24,13 +24,8 @@ public:
 	void MoveToMouseCursor();
 	void SetNewDestination(const FVector Dest);
 	void OnMovePressed();
-
-
-
+	
 private: 
 	bool _bMoveToMouseCursor = false; 
 	
-	UPROPERTY(VisibleAnywhere)
-	class ACharacter* _Target;
-
 };

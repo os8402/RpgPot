@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "M_PlayerUnit.generated.h"
 
+DECLARE_MULTICAST_DELEGATE(FOnAttackEnd)
+
 UCLASS()
 class CLIENT_API AM_PlayerUnit : public ACharacter
 {
@@ -30,12 +32,18 @@ public:
 	void Attack();
 	void AttackCheck();
 
+	FOnAttackEnd OnAttackEnd; 
+
 	void Dead();
 
 	UFUNCTION()
 	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInteruppted);
 
 	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
+
+public:
+
+	void SetTarget(class ACharacter* Target) { _Target = Target; }
 
 private:
 
@@ -53,6 +61,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 	class UM_UnitStat* _Stat;
+
+	UPROPERTY(VisibleAnywhere)
+	class ACharacter* _Target;
 
 
 private:

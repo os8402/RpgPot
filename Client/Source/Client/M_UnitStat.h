@@ -48,6 +48,7 @@ private:
 	int32 _Attack;
 
 public:
+
 	FOnHpChanged OnHpChanged; 
 	FOnDead OnDead;
 		
