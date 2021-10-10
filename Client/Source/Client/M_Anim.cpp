@@ -28,9 +28,18 @@ void UM_Anim::NativeUpdateAnimation(float DeltaSeconds)
 
 }
 
-void UM_Anim::PlayAttackMontage()
+
+
+void UM_Anim::PlayAttackMontage(bool bPlaying /*= true*/)
 {
-	Montage_Play(_AttackMontage, 1.f);
+	
+	if (bPlaying)
+		Montage_Play(_AttackMontage, 1.f);
+	else
+	{
+		if (Montage_GetIsStopped(_AttackMontage) == false)
+			Montage_Stop(0.f, _AttackMontage);
+	}
 
 }
 

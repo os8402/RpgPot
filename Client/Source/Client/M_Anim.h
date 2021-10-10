@@ -21,7 +21,7 @@ public:
 	UM_Anim();
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
-	void PlayAttackMontage();
+	void PlayAttackMontage(bool bPlaying = true);
 
 	void PlayDeadAnim();
 

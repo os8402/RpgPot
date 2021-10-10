@@ -105,6 +105,16 @@ void AM_PlayerUnit::BeginPlay()
 void AM_PlayerUnit::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (_Target)
+	{
+		if (_Target->GetDistanceTo(this) > 200.f)
+		{
+			_Anim->PlayAttackMontage(false);
+		}
+
+	}
+
 	
 }
 
