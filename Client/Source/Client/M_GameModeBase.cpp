@@ -24,3 +24,25 @@ AM_GameModeBase::AM_GameModeBase()
 	}
 
 }
+
+void AM_GameModeBase::BeginPlay()
+{
+	Super::BeginPlay();
+
+	//Bind our Player died delegate to the Gamemode's PlayerDied function.
+	if (!OnPlayerDied.IsBound())
+	{
+		OnPlayerDied.AddDynamic(this, &AM_GameModeBase::PlayerDied);
+	}
+}
+
+void AM_GameModeBase::PlayerDied(ACharacter* Character)
+{
+	AController* CharacterController = Character->GetController();
+	RestartPlayer(CharacterController);
+}
+
+void AM_GameModeBase::RestartPlayer(AController* NewPlayer)
+{
+	Super::RestartPlayer(NewPlayer);
+}

@@ -27,8 +27,6 @@ public:
 
 	void PlayDeadAnim();
 
-
-
 private:
 
 	UFUNCTION()

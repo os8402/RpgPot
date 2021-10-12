@@ -6,6 +6,7 @@
 #include "M_UnitStat.h"
 #include "M_UnitWidget.h"
 #include "M_AI.h"
+#include "M_GameModeBase.h"
 #include <Components/CapsuleComponent.h>
 #include <GameFramework/CharacterMovementComponent.h>
 #include <GameFramework/SpringArmComponent.h>
@@ -103,6 +104,33 @@ void AM_PlayerUnit::BeginPlay()
 	Super::BeginPlay();	
 }
 
+void AM_PlayerUnit::Destroyed()
+{
+	Super::Destroyed();
+
+	if (UWorld* World = GetWorld())
+	{
+		if (AM_GameModeBase* GameMode = Cast<AM_GameModeBase>(World->GetAuthGameMode()))
+		{
+			GameMode->GetOnPlayerDied().Broadcast(this);
+		}
+	}
+}
+
+void AM_PlayerUnit::CallRestartPlayer()
+{
+	AController* CortollerRef = GetController();
+	Destroy();
+
+	if (UWorld* World = GetWorld())
+	{
+		if (AM_GameModeBase* GameMode = Cast<AM_GameModeBase>(World->GetAuthGameMode()))
+		{
+			GameMode->RestartPlayer(CortollerRef);
+		}
+	}
+}
+
 // Called every frame
 void AM_PlayerUnit::Tick(float DeltaTime)
 {
@@ -131,7 +159,7 @@ void AM_PlayerUnit::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 
 void AM_PlayerUnit::Attack()
 {
-	if (_bAttacking || _bDead)
+	if (_bAttacking)
 		return;
 
 	//Attack Rot
@@ -198,8 +226,8 @@ void AM_PlayerUnit::AttackCheck()
 
 void AM_PlayerUnit::Dead()
 {
-	_bDead = true;
-	_Anim->PlayDeadAnim();
+	CallRestartPlayer();
+
 }
 
 void AM_PlayerUnit::OnAttackMontageEnded(UAnimMontage* Montage, bool bInteruppted)

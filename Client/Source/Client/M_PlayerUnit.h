@@ -21,6 +21,10 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
+	virtual void Destroyed() override;
+	void CallRestartPlayer();
+	
+
 
 public:	
 	// Called every frame
@@ -73,9 +77,6 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = Pawn)
 	bool _bAttacking;
-
-	UPROPERTY(VisibleAnywhere, Category = Pawn)
-	bool _bDead;
 
 	UPROPERTY(VisibleAnywhere, Category = Pawn)
 	int32 _Hp;
