@@ -25,7 +25,6 @@ void UM_Anim::NativeUpdateAnimation(float DeltaSeconds)
 		_Speed = CurPawn->GetVelocity().Size();
 	}
 
-
 }
 
 
@@ -42,6 +41,18 @@ void UM_Anim::PlayAttackMontage(bool bPlaying /*= true*/)
 	}
 
 }
+FName UM_Anim::GetAttckMontageName(int32 SectionIndex)
+{
+	return FName(*FString::Printf(TEXT("Attack%d"), SectionIndex));
+}
+
+
+void UM_Anim::JumpToSection(int32 SectionIndex)
+{
+	FName Name = GetAttckMontageName(SectionIndex);
+	Montage_JumpToSection(Name, _AttackMontage);
+}
+
 
 void UM_Anim::PlayDeadAnim()
 {

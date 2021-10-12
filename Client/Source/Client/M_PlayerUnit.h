@@ -69,6 +69,9 @@ private:
 private:
 
 	UPROPERTY(VisibleAnywhere, Category = Pawn)
+	int32 _AttackId = 0;
+
+	UPROPERTY(VisibleAnywhere, Category = Pawn)
 	bool _bAttacking;
 
 	UPROPERTY(VisibleAnywhere, Category = Pawn)

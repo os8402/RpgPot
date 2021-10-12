@@ -146,6 +146,8 @@ void AM_PlayerUnit::Attack()
 	}
 
 	_Anim->PlayAttackMontage();
+	_Anim->JumpToSection(_AttackId);
+	_AttackId = (_AttackId + 1) % 3;
 
 	_bAttacking = true;
 

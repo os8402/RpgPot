@@ -22,8 +22,12 @@ public:
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 
 	void PlayAttackMontage(bool bPlaying = true);
+	FName GetAttckMontageName(int32 SectionIndex);
+	void JumpToSection(int32 SectionIndex);
 
 	void PlayDeadAnim();
+
+
 
 private:
 

@@ -56,16 +56,12 @@ void AM_Controller::SetNewDestination(const FVector Dest,  float DeltaTime)
 
 	UCharacterMovementComponent* MovementComp = MyCharacter->GetCharacterMovement();
 
-	
 	float WalkSpeed = MovementComp->MaxWalkSpeed;
 	FVector Direction = (Dest - MyPos).GetSafeNormal();
 	FVector InVelocity = Direction * WalkSpeed;
 
 	//MovementComp->MoveSmooth(InVelocity, DeltaTime);
 	MyCharacter->AddMovementInput(InVelocity.GetSafeNormal());
-	UE_LOG(LogTemp, Warning, TEXT("Cur Speed :  %f"), InVelocity.GetSafeNormal().Size());
-	//UE_LOG(LogTemp, Warning, TEXT("Get Speed :  %f"), );
-
 
 	FRotator TargetRot = UKismetMathLibrary::FindLookAtRotation(MyPos, Dest);
 	FRotator SmoothRot = MyCharacter->GetActorRotation();
@@ -73,9 +69,8 @@ void AM_Controller::SetNewDestination(const FVector Dest,  float DeltaTime)
 	TargetRot.Pitch = 0.f;
 	TargetRot.Roll = 0.f;
 	
-	SmoothRot = FMath::RInterpTo(SmoothRot, TargetRot, DeltaTime, _InterpSpeed);
+	//SmoothRot = FMath::RInterpTo(SmoothRot, TargetRot, DeltaTime, _InterpSpeed);
 	MyCharacter->SetActorRotation(TargetRot);
-
 
 }
 
