@@ -44,7 +44,7 @@ public:
 public:
 
 	void SetTarget(class ACharacter* Target) { _Target = Target; }
-
+	
 private:
 
 	UPROPERTY(VisibleAnywhere)

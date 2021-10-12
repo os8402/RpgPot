@@ -50,14 +50,22 @@ void AM_Controller::MoveToMouseCursor(float DeltaTime)
 void AM_Controller::SetNewDestination(const FVector Dest,  float DeltaTime)
 {
 	
-	ACharacter* MyCharacter = GetCharacter();
+	AM_PlayerUnit* MyCharacter = Cast<AM_PlayerUnit>(GetCharacter());
 
 	FVector MyPos = MyCharacter->GetActorLocation();
 
 	UCharacterMovementComponent* MovementComp = MyCharacter->GetCharacterMovement();
-	float Speed = MovementComp->MaxWalkSpeed;
+
+	
+	float WalkSpeed = MovementComp->MaxWalkSpeed;
 	FVector Direction = (Dest - MyPos).GetSafeNormal();
-	MovementComp->MoveSmooth(Direction * Speed, DeltaTime);
+	FVector InVelocity = Direction * WalkSpeed;
+
+	//MovementComp->MoveSmooth(InVelocity, DeltaTime);
+	MyCharacter->AddMovementInput(InVelocity.GetSafeNormal());
+	UE_LOG(LogTemp, Warning, TEXT("Cur Speed :  %f"), InVelocity.GetSafeNormal().Size());
+	//UE_LOG(LogTemp, Warning, TEXT("Get Speed :  %f"), );
+
 
 	FRotator TargetRot = UKismetMathLibrary::FindLookAtRotation(MyPos, Dest);
 	FRotator SmoothRot = MyCharacter->GetActorRotation();
