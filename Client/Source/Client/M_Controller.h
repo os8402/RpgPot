@@ -20,12 +20,19 @@ public:
 	virtual void SetupInputComponent() override;
 	virtual void PlayerTick(float DeltaTime) override;
 
-
-	void MoveToMouseCursor();
-	void SetNewDestination(const FVector Dest);
+	void MoveToMouseCursor(float DeltaTime);
+	void SetNewDestination(const FVector Dest, float DeltaTime);
 	void OnMovePressed();
+	void OnMoveReleased();
+
 	
 private: 
+
 	bool _bMoveToMouseCursor = false; 
+	
+	float _InterpSpeed = 0.1f;
+	TWeakObjectPtr<class AActor> _Target;  
+
+
 	
 };

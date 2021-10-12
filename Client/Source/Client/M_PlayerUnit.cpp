@@ -11,6 +11,7 @@
 #include <GameFramework/SpringArmComponent.h>
 #include <Camera/CameraComponent.h>
 #include <Components/WidgetComponent.h>
+#include <Kismet/KismetMathLibrary.h>
 #include <DrawDebugHelpers.h>
 
 
@@ -35,6 +36,7 @@ AM_PlayerUnit::AM_PlayerUnit()
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 640.f, 0.f);
 	GetCharacterMovement()->bConstrainToPlane = true;
 	GetCharacterMovement()->bSnapToPlaneAtStart = true;
+	GetCharacterMovement()->bUseControllerDesiredRotation = true;
 
 	// Create a camera boom...
 	_SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SPRINGARM"));
@@ -131,6 +133,17 @@ void AM_PlayerUnit::Attack()
 {
 	if (_bAttacking || _bDead)
 		return;
+
+	//Attack Rot
+	if(_Target)
+	{
+		FVector Pos = GetActorLocation();
+		FVector AttackPos = _Target->GetActorLocation();
+
+		FRotator Rot = UKismetMathLibrary::FindLookAtRotation(Pos, AttackPos);
+		SetActorRotation(Rot);
+
+	}
 
 	_Anim->PlayAttackMontage();
 
