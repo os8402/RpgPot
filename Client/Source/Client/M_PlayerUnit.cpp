@@ -6,6 +6,7 @@
 #include "M_UnitStat.h"
 #include "M_UnitWidget.h"
 #include "M_AI.h"
+#include "M_Controller.h"
 #include "M_GameModeBase.h"
 #include <Components/CapsuleComponent.h>
 #include <GameFramework/CharacterMovementComponent.h>
@@ -119,16 +120,28 @@ void AM_PlayerUnit::Destroyed()
 
 void AM_PlayerUnit::CallRestartPlayer()
 {
-	AController* CortollerRef = GetController();
+	AController* ControllerRef = GetController();
+	bool bPlayer = ControllerRef->IsPlayerController();
+	UWorld* World = GetWorld();
+	AM_GameModeBase* GameMode = Cast<AM_GameModeBase>(World->GetAuthGameMode());
+
 	Destroy();
 
-	if (UWorld* World = GetWorld())
+	if (World == nullptr)
+		return;
+
+	if (bPlayer)
 	{
-		if (AM_GameModeBase* GameMode = Cast<AM_GameModeBase>(World->GetAuthGameMode()))
-		{
-			GameMode->RestartPlayer(CortollerRef);
-		}
+
+		if (GameMode)		
+			GameMode->RestartPlayer(ControllerRef);
 	}
+	else
+	{
+		if (GameMode)
+			GameMode->RespawnMonster(GetActorLocation());
+	}
+
 }
 
 // Called every frame

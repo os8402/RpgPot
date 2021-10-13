@@ -32,9 +32,19 @@ protected:
     UPROPERTY()
     FOnPlayerDied OnPlayerDied;
 
+  
+
 public:
     const FOnPlayerDied& GetOnPlayerDied() const { return OnPlayerDied; }
 
     //Tries to Spawn the player's pawn.
     virtual void RestartPlayer(AController* NewPlayer) override;
+
+    void RespawnMonster(const FVector& Pos);
+
+    UPROPERTY(EditAnywhere)
+    TSubclassOf<class AActor> _Monster; 
+
+    
+
 };

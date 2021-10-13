@@ -12,6 +12,7 @@ AM_GameModeBase::AM_GameModeBase()
 	if (MP.Succeeded())
 	{
 		DefaultPawnClass = MP.Class;
+		_Monster = MP.Class;
 
 	}
 
@@ -22,6 +23,10 @@ AM_GameModeBase::AM_GameModeBase()
 	{
 		PlayerControllerClass = AM.Class;
 	}
+
+	//static ConstructorHelpers::FClassFinder<UBlueprint> UB(TEXT(""));
+
+
 
 }
 
@@ -42,7 +47,24 @@ void AM_GameModeBase::PlayerDied(ACharacter* Character)
 	RestartPlayer(CharacterController);
 }
 
+
+
 void AM_GameModeBase::RestartPlayer(AController* NewPlayer)
 {
 	Super::RestartPlayer(NewPlayer);
 }
+
+void AM_GameModeBase::RespawnMonster(const FVector& Pos)
+{
+	UWorld* World = GetWorld();
+
+	if (World)
+	{
+		FActorSpawnParameters SpawnParams;
+		FRotator Rot;
+		FVector SpawnPos = Pos;
+
+		World->SpawnActor<AActor>(_Monster, SpawnPos, Rot, SpawnParams);
+	}
+}
+
