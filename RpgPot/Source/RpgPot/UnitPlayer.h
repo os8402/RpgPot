@@ -41,8 +41,15 @@ private:
 	class USpringArmComponent* _springArm;
 	UPROPERTY(VisibleAnyWhere)
 	class UCameraComponent* _cam;
-	UPROPERTY(VisibleAnywhere)
-	class UMyAnimInstance* _animInstance;
+
+	
+	UPROPERTY(VisibleAnywhere , Category= Pawn)
+	float _targetArmLength = 800.f;
+	UPROPERTY(VisibleAnywhere , Category=Pawn)
+	float _bAttacking = false;
+
+
+
 
 
 };

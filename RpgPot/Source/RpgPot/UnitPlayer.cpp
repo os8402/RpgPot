@@ -3,6 +3,9 @@
 
 #include "UnitPlayer.h"
 #include <Components/CapsuleComponent.h>
+#include <GameFramework/SpringArmComponent.h>
+#include <Camera//CameraComponent.h>
+
 
 
 // Sets default values
@@ -11,7 +14,17 @@ AUnitPlayer::AUnitPlayer()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	//_springArm = CreateDefaultSubobject<USpringArmCompoenent>(TEXT("SPRING_ARM"));
+	//√ ±‚»≠
+	_springArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SPRING_ARM"));
+	_springArm->SetupAttachment(GetCapsuleComponent());
+	_springArm->TargetArmLength = _targetArmLength;
+	_springArm->SetRelativeRotation(FRotator(0.f , -35.f , 0.f));
+	
+	_cam = CreateDefaultSubobject<UCameraComponent>(TEXT("CAM"));
+	_cam->SetupAttachment(_springArm);
+	_cam->SetRelativeRotation(FRotator(0.f, 0.f, -90.f));
+
+
 
 }
 
