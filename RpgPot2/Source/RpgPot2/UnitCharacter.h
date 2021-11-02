@@ -44,5 +44,6 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Pawn")
 	float _targetArmLength = 800.f;
 
+
 	
 };

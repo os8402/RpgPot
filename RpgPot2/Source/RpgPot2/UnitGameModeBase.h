@@ -13,5 +13,8 @@ UCLASS()
 class RPGPOT2_API AUnitGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
+
+public:
+	AUnitGameModeBase();
 	
 };
