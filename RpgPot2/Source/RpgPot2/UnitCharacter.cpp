@@ -8,6 +8,8 @@
 #include <GameFramework/CharacterMovementComponent.h>
 #include <Components/WidgetComponent.h>
 #include "UnitPlayerController.h"
+#include "UnitAnim.h"
+#include <Kismet/KismetMathLibrary.h>
 
 // Sets default values
 AUnitCharacter::AUnitCharacter()
@@ -39,13 +41,26 @@ AUnitCharacter::AUnitCharacter()
 	_cam->bUsePawnControlRotation = false; 
 	
 
+	_outLineMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("OUTLINE"));
+	_outLineMesh->SetupAttachment(RootComponent);
+	_outLineMesh->SetVisibility(false);
+
 }
+
+
 
 // Called when the game starts or when spawned
 void AUnitCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
+	_animIns = Cast<UUnitAnim>(GetMesh()->GetAnimInstance());
+
+	if (_animIns)
+	{
+		_animIns->OnMontageEnded.AddDynamic(this, &AUnitCharacter::OnAttackMontageEnded);
+	}
+
 }
 
 void AUnitCharacter::PostInitializeComponents()
@@ -63,14 +78,14 @@ void AUnitCharacter::Tick(float DeltaTime)
 	if (PC)
 	{
 		FHitResult HitResult;
-		PC->GetHitResultUnderCursor(ECC_Visibility, true, HitResult);
+		PC->GetHitResultUnderCursor(ECC_Pawn, true, HitResult);
 
 		
 		if (HitResult.bBlockingHit)
 		{
 
-			auto Obj = Cast<ACharacter>(HitResult.Actor);
-			UE_LOG(LogTemp, Log, TEXT("Hit Actor %s"), *HitResult.Actor->GetName());
+			auto Obj = Cast<AUnitCharacter>(HitResult.Actor);
+			//UE_LOG(LogTemp, Log, TEXT("Hit Actor %s"), *HitResult.Actor->GetName());
 
 			PC->CheckEnemy(Obj, this);
 		}
@@ -89,11 +104,24 @@ void AUnitCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 
 void AUnitCharacter::Attack()
 {
+	if (_bAttacking)
+		return;
+		
+	_animIns->PlayAttackMontage();
 
+
+	_bAttacking = true;
+	
 }
 
 void AUnitCharacter::AttackCheck()
 {
 
+}
+
+void AUnitCharacter::OnAttackMontageEnded(UAnimMontage* montage, bool bInteruppted)
+{
+	_bAttacking = false;
+	_onAttackEnded.Broadcast();
 }
 

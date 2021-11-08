@@ -5,7 +5,9 @@
 #include <Blueprint/AIBlueprintHelperLibrary.h>
 #include <Components/WidgetComponent.h>
 #include <Blueprint/UserWidget.h>
-
+#include "UnitCharacter.h"
+#include "UnitAnim.h"
+#include <Kismet/KismetMathLibrary.h>
 
 AUnitPlayerController::AUnitPlayerController()
 {
@@ -27,6 +29,7 @@ AUnitPlayerController::AUnitPlayerController()
 		_cursorAttack->SetWidgetClass(CA.Class);
 	}
 
+	ProjectWorldLocationToScreen()
 
 }
 
@@ -38,11 +41,18 @@ void AUnitPlayerController::PlayerTick(float DeltaTime)
 	{
 		MoveToMouseCursor();
 	}
+
+	if (_bAttacking)
+	{
+		ChaseEnemy();
+	}
+
 }
 
 void AUnitPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
+
 
 	InputComponent->BindAction("Move", IE_Pressed, this, &AUnitPlayerController::OnMovePressed);
 	InputComponent->BindAction("Move", IE_Released, this, &AUnitPlayerController::OnMoveReleased);
@@ -52,48 +62,130 @@ void AUnitPlayerController::MoveToMouseCursor()
 {
 	_bClickMouse = true;
 
-	FHitResult Hit;
-	GetHitResultUnderCursor(ECC_Visibility, false, Hit);
+	_bAttacking = false;
 
+
+	FHitResult Hit;
+	GetHitResultUnderCursor(ECC_Pawn, false, Hit);
+
+
+	auto owned = Cast<AUnitCharacter>(GetCharacter());
+	if (owned == nullptr)
+		return;
 
 	if (Hit.bBlockingHit)
 	{
+		if (_enemyTarget.IsValid())
+		{
+			auto Obj = Cast<AUnitCharacter>(Hit.Actor);
+			
+			if (Obj && Obj == _enemyTarget.Get())
+			{
+				_bAttacking = true;
+				return;
+
+			}
+
+
+			_enemyTarget.Get()->GetOutLineMesh()->SetVisibility(false);
+		}
+
+		//_bAttacking = false;
+		owned->GetUnitAnim()->StopAllMontages(.1f);
+		_enemyTarget.Reset();
+
 		SetMoveDest(Hit.ImpactPoint);
 	}
 }
+
+
 
 void AUnitPlayerController::SetMoveDest(const FVector DestLocation)
 {
 	APawn* const myPawn = GetPawn();
 
-	if (myPawn)
+	if (myPawn == nullptr)
+		return;
+
+	
+	float const dist = FVector::Dist(DestLocation, myPawn->GetActorLocation());
+
+	if (dist > 100.f)
 	{
-		float const dist = FVector::Dist(DestLocation, myPawn->GetActorLocation());
-
-		if (dist > 120.f)
-		{
-			UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, DestLocation);
-		}
-
+		UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, DestLocation);
 	}
+
+	
 }
 
-void AUnitPlayerController::CheckEnemy(ACharacter* Enemy , ACharacter* MyCharacter )
+void AUnitPlayerController::CheckEnemy(AUnitCharacter* Enemy , AUnitCharacter* MyCharacter)
 {
 
-	//auto uw = Cast<UUserWidget>(_cursorTest->StaticClass());
-
-	if (Enemy)
+	if (Enemy && MyCharacter != Enemy)
 	{
 		SetMouseCursorWidget(EMouseCursor::Default, _cursorAttack->GetUserWidgetObject());
+		_enemyTarget = Enemy;
+		_enemyTarget.Get()->GetOutLineMesh()->SetVisibility(true);
+
 	}	
 	else
 	{
 		SetMouseCursorWidget(EMouseCursor::Default, _cursorBasic->GetUserWidgetObject());
+		
+		if (_bAttacking == false)
+		{
+			if (_enemyTarget.IsValid())
+				_enemyTarget.Get()->GetOutLineMesh()->SetVisibility(false);
+
+			_enemyTarget.Reset();
+		}
+
 	}
 	
+}
 
+void AUnitPlayerController::ChaseEnemy()
+{
+	auto owned = Cast<AUnitCharacter>(GetCharacter());
+	
 
+	if (owned == nullptr)
+		return;
+
+	float const dist = FVector::Dist(
+		_enemyTarget.Get()->GetActorLocation(),
+		owned->GetActorLocation());
+
+	if (dist > 200.f)
+	{
+		SetMoveDest(_enemyTarget.Get()->GetActorLocation());
+	}
+	else
+	{	
+		UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, owned->GetActorLocation());
+		AttackEnemy(owned);
+	}
+
+	
+}
+
+void AUnitPlayerController::AttackEnemy(AUnitCharacter* owned)
+{
+	if (owned == nullptr || owned->IsAttacking())
+		return;
+
+	FVector ownedLoc = owned->GetActorLocation();
+	FVector enemyLoc = FVector::ZeroVector;
+	
+	if (_enemyTarget.IsValid())
+		enemyLoc = _enemyTarget.Get()->GetActorLocation();
+
+	FRotator destRot = UKismetMathLibrary::FindLookAtRotation(ownedLoc, enemyLoc);
+
+	owned->SetActorRotation(destRot);
+
+	owned->Attack();
+	//UE_LOG(LogTemp, Log, TEXT("Attack Start"));
 }
 
 void AUnitPlayerController::OnMovePressed()

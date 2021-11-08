@@ -5,7 +5,12 @@
 
 UUnitAnim::UUnitAnim()
 {
-
+	static ConstructorHelpers::FObjectFinder<UAnimMontage> UM(TEXT("AnimMontage'/Game/Resources/Model/Katana/Animations/AM_AttackKatana.AM_AttackKatana'"));
+	
+	if (UM.Succeeded())
+	{
+		_attackMontage = UM.Object;
+	}
 }
 
 void UUnitAnim::NativeUpdateAnimation(float DeltaSeconds)
@@ -19,5 +24,15 @@ void UUnitAnim::NativeUpdateAnimation(float DeltaSeconds)
 		_speed = pawn->GetVelocity().Size();
 	}
 
+}
+
+void UUnitAnim::PlayAttackMontage()
+{
+	Montage_Play(_attackMontage, 1.0f);
+}
+
+void UUnitAnim::AnimNotify_AttackHit()
+{
+	UE_LOG(LogTemp, Log, TEXT("AttackHit"));
 }
 

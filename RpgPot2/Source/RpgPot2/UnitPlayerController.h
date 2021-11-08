@@ -24,16 +24,19 @@ public:
 public:
 
 	void MoveToMouseCursor();
+
 	void SetMoveDest(const FVector DestLocation);
 
-	void CheckEnemy(ACharacter* Enemy, ACharacter* MyCharacter);
+	void CheckEnemy(class AUnitCharacter* Enemy, class AUnitCharacter* MyCharacter);
+	void ChaseEnemy();
+	void AttackEnemy(AUnitCharacter* owned);
 
 	void OnMovePressed();
 	void OnMoveReleased();
 
 
 private:
-	int32 _bClickMouse = 0;
+	bool _bClickMouse = 0;
 
 	UPROPERTY(EditAnywhere, Category = "Cursor")
 	TSubclassOf<class UUserWidget> _cursorTest;
@@ -43,5 +46,11 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 	class UWidgetComponent* _cursorAttack;
+
+	UPROPERTY(VisibleAnywhere)
+	TWeakObjectPtr<AUnitCharacter> _enemyTarget;
+
+	bool _bAttacking = false; 
+
 
 };

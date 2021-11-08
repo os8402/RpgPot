@@ -6,6 +6,9 @@
 #include "GameFramework/Character.h"
 #include "UnitCharacter.generated.h"
 
+
+DECLARE_MULTICAST_DELEGATE(FOnAttackEnded)
+
 UCLASS()
 class RPGPOT2_API AUnitCharacter : public ACharacter
 {
@@ -33,6 +36,17 @@ public:
 	void Attack();
 	void AttackCheck();
 
+	FOnAttackEnded _onAttackEnded;
+
+	UFUNCTION()
+	void OnAttackMontageEnded(UAnimMontage* montage, bool bInteruppted);
+
+public:
+	USkeletalMeshComponent* GetOutLineMesh() { return _outLineMesh; }
+	class UUnitAnim* GetUnitAnim() { return _animIns; }
+	bool IsAttacking() { return _bAttacking; }
+
+
 private:
 
 	UPROPERTY(VisibleAnywhere)
@@ -43,7 +57,18 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Pawn")
 	float _targetArmLength = 800.f;
-
-
 	
+	UPROPERTY(EditAnywhere, Category = "Mesh")
+	class USkeletalMeshComponent* _outLineMesh;
+
+	UPROPERTY(EditAnywhere, Category = "Mesh")
+	class UMaterial* _outLineMat;
+	
+	UPROPERTY(EditAnywhere, Category = "Mesh")
+	TArray<class UMaterial*> _originMats;
+
+	UPROPERTY(VisibleAnywhere)
+	class UUnitAnim* _animIns;
+
+	bool _bAttacking = false;
 };
