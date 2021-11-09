@@ -9,6 +9,9 @@
 /**
  * 
  */
+
+DECLARE_MULTICAST_DELEGATE(FOnAttackHit)
+
 UCLASS()
 class RPGPOT2_API UUnitAnim : public UAnimInstance
 {
@@ -26,6 +29,11 @@ public:
 	UFUNCTION()
 	void AnimNotify_AttackHit();
 
+public:
+	
+	FOnAttackHit& GetOnAttackHit() { return _onAttackHit; }
+
+
 private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pawn", Meta = (AllowPrivateAccess=true));
@@ -35,5 +43,5 @@ private:
 	UAnimMontage* _attackMontage;
 
 
-	
+	FOnAttackHit _onAttackHit;
 };

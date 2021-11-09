@@ -36,16 +36,22 @@ public:
 	void Attack();
 	void AttackCheck();
 
+	void Damage(AUnitCharacter* Attacker);
+
 	FOnAttackEnded _onAttackEnded;
 
 	UFUNCTION()
 	void OnAttackMontageEnded(UAnimMontage* montage, bool bInteruppted);
 
 public:
+	
 	USkeletalMeshComponent* GetOutLineMesh() { return _outLineMesh; }
+	
 	class UUnitAnim* GetUnitAnim() { return _animIns; }
+	
 	bool IsAttacking() { return _bAttacking; }
-
+	
+	int32 GetHp() { return _hp; }
 
 private:
 
@@ -71,4 +77,11 @@ private:
 	class UUnitAnim* _animIns;
 
 	bool _bAttacking = false;
+	
+	int32 _hp = 100; 
+
+	UPROPERTY(VisibleAnyWhere, Category = "UI")
+	TSubclassOf<class AActor> _dmgActor;
+
+
 };

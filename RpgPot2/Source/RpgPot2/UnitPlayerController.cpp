@@ -29,8 +29,6 @@ AUnitPlayerController::AUnitPlayerController()
 		_cursorAttack->SetWidgetClass(CA.Class);
 	}
 
-	ProjectWorldLocationToScreen()
-
 }
 
 void AUnitPlayerController::PlayerTick(float DeltaTime)
@@ -197,3 +195,4 @@ void AUnitPlayerController::OnMoveReleased()
 {
 	_bClickMouse = false;
 }
+

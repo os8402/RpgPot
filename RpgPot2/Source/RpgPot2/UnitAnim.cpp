@@ -33,6 +33,6 @@ void UUnitAnim::PlayAttackMontage()
 
 void UUnitAnim::AnimNotify_AttackHit()
 {
-	UE_LOG(LogTemp, Log, TEXT("AttackHit"));
+	_onAttackHit.Broadcast();
 }
 

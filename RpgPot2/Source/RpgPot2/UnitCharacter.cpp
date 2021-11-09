@@ -10,6 +10,7 @@
 #include "UnitPlayerController.h"
 #include "UnitAnim.h"
 #include <Kismet/KismetMathLibrary.h>
+#include "DmgTextActor.h"
 
 // Sets default values
 AUnitCharacter::AUnitCharacter()
@@ -45,6 +46,13 @@ AUnitCharacter::AUnitCharacter()
 	_outLineMesh->SetupAttachment(RootComponent);
 	_outLineMesh->SetVisibility(false);
 
+	static ConstructorHelpers::FObjectFinder<UBlueprint> DT(TEXT("Blueprint'/Game/Blueprints/BP_FloatText.BP_FloatText'"));
+
+	if (DT.Object)
+	{
+		_dmgActor = Cast<UClass>(DT.Object->GeneratedClass);
+	}
+
 }
 
 
@@ -54,18 +62,22 @@ void AUnitCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
-	_animIns = Cast<UUnitAnim>(GetMesh()->GetAnimInstance());
-
-	if (_animIns)
-	{
-		_animIns->OnMontageEnded.AddDynamic(this, &AUnitCharacter::OnAttackMontageEnded);
-	}
 
 }
 
 void AUnitCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
+
+	_animIns = Cast<UUnitAnim>(GetMesh()->GetAnimInstance());
+
+	if (_animIns)
+	{
+		_animIns->OnMontageEnded.AddDynamic(this, &AUnitCharacter::OnAttackMontageEnded);
+		_animIns->GetOnAttackHit().AddUObject(this, &AUnitCharacter::AttackCheck);
+	}
+
+
 }
 
 // Called every frame
@@ -89,8 +101,6 @@ void AUnitCharacter::Tick(float DeltaTime)
 
 			PC->CheckEnemy(Obj, this);
 		}
-
-
 	}
 
 }
@@ -106,9 +116,8 @@ void AUnitCharacter::Attack()
 {
 	if (_bAttacking)
 		return;
-		
-	_animIns->PlayAttackMontage();
 
+	_animIns->PlayAttackMontage();
 
 	_bAttacking = true;
 	
@@ -116,6 +125,52 @@ void AUnitCharacter::Attack()
 
 void AUnitCharacter::AttackCheck()
 {
+
+	auto controller = Cast<AUnitPlayerController>(GetController());
+
+	if (controller == nullptr)
+		return;
+
+	auto target = controller->GetTarget();
+
+	if (target.IsValid())
+	{
+		target->Damage(this);	
+	}
+
+	
+
+}
+
+void AUnitCharacter::Damage(AUnitCharacter* Attacker)
+{
+
+	FVector ownedLoc = GetActorLocation();
+	FVector enemyLoc = Attacker->GetActorLocation();
+	FRotator destRot = UKismetMathLibrary::FindLookAtRotation(ownedLoc, enemyLoc);
+	SetActorRotation(destRot);
+
+	int32 dmg = FMath::RandRange(10, 100);
+
+	_hp = FMath::Max(0, _hp - dmg);
+
+	UE_LOG(LogTemp, Log, TEXT("Hp %d") , _hp);
+
+	UWorld* world = GetWorld();
+
+	if (world == nullptr)
+		return;
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	FRotator rotator;
+	FVector  SpawnLocation = GetActorLocation();
+	SpawnLocation.Z += 50.f;
+
+	auto dmgActor = Cast<ADmgTextActor>(
+		world->SpawnActor<AActor>(_dmgActor, SpawnLocation, rotator, SpawnParams));
+
+	dmgActor->UpdateDamage(dmg);
 
 }
 

@@ -35,6 +35,11 @@ public:
 	void OnMoveReleased();
 
 
+
+public:
+	TWeakObjectPtr<AUnitCharacter>& GetTarget() { return _enemyTarget; }
+
+
 private:
 	bool _bClickMouse = 0;
 
@@ -51,6 +56,8 @@ private:
 	TWeakObjectPtr<AUnitCharacter> _enemyTarget;
 
 	bool _bAttacking = false; 
+
+	
 
 
 };
