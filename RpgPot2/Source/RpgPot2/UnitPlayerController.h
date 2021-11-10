@@ -17,8 +17,10 @@ class RPGPOT2_API AUnitPlayerController : public APlayerController
 public:
 
 	AUnitPlayerController();
+	virtual void BeginPlay() override;
 	virtual void PlayerTick(float DeltaTime) override;
 	virtual void SetupInputComponent() override;
+
 
 
 public:
@@ -57,7 +59,10 @@ private:
 
 	bool _bAttacking = false; 
 
-	
+	UPROPERTY(EditDefaultsOnly, Category="UI")
+	TSubclassOf<class UInGameMainWidget> _ingameMainClass;
+	class UInGameMainWidget* _ingameMainUI;
+
 
 
 };

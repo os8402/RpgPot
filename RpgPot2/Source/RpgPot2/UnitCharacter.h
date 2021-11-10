@@ -22,7 +22,7 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	virtual void PostInitializeComponents() override;
-
+	
 
 public:	
 	// Called every frame
@@ -36,9 +36,9 @@ public:
 	void Attack();
 	void AttackCheck();
 
-	void Damage(AUnitCharacter* Attacker);
+	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
-	FOnAttackEnded _onAttackEnded;
+	void VisibleHpBar();
 
 	UFUNCTION()
 	void OnAttackMontageEnded(UAnimMontage* montage, bool bInteruppted);
@@ -51,7 +51,7 @@ public:
 	
 	bool IsAttacking() { return _bAttacking; }
 	
-	int32 GetHp() { return _hp; }
+	FOnAttackEnded& GetOnAttackEnded() { return _onAttackEnded; }
 
 private:
 
@@ -61,7 +61,7 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	class UCameraComponent* _cam;
 
-	UPROPERTY(VisibleAnywhere, Category = "Pawn")
+	UPROPERTY(EditAnywhere, Category = "Pawn")
 	float _targetArmLength = 800.f;
 	
 	UPROPERTY(EditAnywhere, Category = "Mesh")
@@ -77,11 +77,29 @@ private:
 	class UUnitAnim* _animIns;
 
 	bool _bAttacking = false;
-	
-	int32 _hp = 100; 
 
 	UPROPERTY(VisibleAnyWhere, Category = "UI")
 	TSubclassOf<class AActor> _dmgActor;
+
+	UPROPERTY(VisibleAnyWhere, Category = "UI")
+	class UWidgetComponent* _hpBar; 
+
+	FOnAttackEnded _onAttackEnded;
+
+	FTimerHandle timerHandle;
+
+	UPROPERTY(VisibleAnywhere)
+	class UStatDataComponent* _statComp;
+
+	//UPROPERTY(VisibleAnywhere)
+	//class USpringArmComponent* _minimapSpring;
+
+	//UPROPERTY(VisibleAnywhere)
+	//class USceneCaptureComponent2D* _minimapCam;
+
+	//UPROPERTY(VisibleAnywhere)
+	//class UPaperSpriteComponent* _minimapIcon; 
+
 
 
 };

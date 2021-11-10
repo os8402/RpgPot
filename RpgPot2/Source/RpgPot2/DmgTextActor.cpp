@@ -12,8 +12,11 @@ ADmgTextActor::ADmgTextActor()
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	//RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("ROOT_COMP"));
+
+
 	_dmgText = CreateDefaultSubobject<UWidgetComponent>(TEXT("DMG_TEXT"));
-	_dmgText->SetupAttachment(RootComponent);
+	//_dmgText->SetupAttachment();
 	_dmgText->SetWidgetSpace(EWidgetSpace::Screen);
 
 	static ConstructorHelpers::FClassFinder<UUserWidget> UW(TEXT("WidgetBlueprint'/Game/Blueprints/Widget/WBP_DmgText.WBP_DmgText_C'"));
@@ -23,7 +26,6 @@ ADmgTextActor::ADmgTextActor()
 		_dmgText->SetWidgetClass(UW.Class);
 		_dmgText->SetDrawSize(FVector2D(200.f, 50.f));
 	}
-
 }
 
 

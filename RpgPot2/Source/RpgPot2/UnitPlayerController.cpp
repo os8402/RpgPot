@@ -8,6 +8,7 @@
 #include "UnitCharacter.h"
 #include "UnitAnim.h"
 #include <Kismet/KismetMathLibrary.h>
+#include "InGameMainWidget.h"
 
 AUnitPlayerController::AUnitPlayerController()
 {
@@ -29,6 +30,18 @@ AUnitPlayerController::AUnitPlayerController()
 		_cursorAttack->SetWidgetClass(CA.Class);
 	}
 
+	static ConstructorHelpers::FClassFinder<UInGameMainWidget> WB_Ingame(TEXT("WidgetBlueprint'/Game/Blueprints/Widget/WBP_InGameMain.WBP_InGameMain_C'"));
+	if (WB_Ingame.Succeeded())
+	{
+		_ingameMainClass = WB_Ingame.Class;
+	}
+}
+
+void AUnitPlayerController::BeginPlay()
+{
+	Super::BeginPlay();
+	_ingameMainUI = CreateWidget<UInGameMainWidget>(this, _ingameMainClass);
+	_ingameMainUI->AddToViewport();
 }
 
 void AUnitPlayerController::PlayerTick(float DeltaTime)
@@ -55,6 +68,8 @@ void AUnitPlayerController::SetupInputComponent()
 	InputComponent->BindAction("Move", IE_Pressed, this, &AUnitPlayerController::OnMovePressed);
 	InputComponent->BindAction("Move", IE_Released, this, &AUnitPlayerController::OnMoveReleased);
 }
+
+
 
 void AUnitPlayerController::MoveToMouseCursor()
 {
@@ -83,8 +98,6 @@ void AUnitPlayerController::MoveToMouseCursor()
 				return;
 
 			}
-
-
 			_enemyTarget.Get()->GetOutLineMesh()->SetVisibility(false);
 		}
 
@@ -183,7 +196,7 @@ void AUnitPlayerController::AttackEnemy(AUnitCharacter* owned)
 	owned->SetActorRotation(destRot);
 
 	owned->Attack();
-	//UE_LOG(LogTemp, Log, TEXT("Attack Start"));
+
 }
 
 void AUnitPlayerController::OnMovePressed()

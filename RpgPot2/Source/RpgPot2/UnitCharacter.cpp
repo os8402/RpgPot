@@ -11,6 +11,9 @@
 #include "UnitAnim.h"
 #include <Kismet/KismetMathLibrary.h>
 #include "DmgTextActor.h"
+#include "HpBarWidget.h"
+#include "StatDataComponent.h"
+
 
 // Sets default values
 AUnitCharacter::AUnitCharacter()
@@ -53,15 +56,33 @@ AUnitCharacter::AUnitCharacter()
 		_dmgActor = Cast<UClass>(DT.Object->GeneratedClass);
 	}
 
+	_hpBar = CreateDefaultSubobject<UWidgetComponent>(TEXT("HP_BAR"));
+	_hpBar->SetupAttachment(GetMesh());
+	_hpBar->SetWidgetSpace(EWidgetSpace::Screen);
+	_hpBar->SetRelativeLocation(FVector(0.f, 0.f, 300.f));
+
+	static ConstructorHelpers::FClassFinder<UUserWidget> WBP_HpBar(TEXT("WidgetBlueprint'/Game/Blueprints/Widget/WBP_HpBar.WBP_HpBar_C'"));
+
+	if (WBP_HpBar.Succeeded())
+	{
+		_hpBar->SetWidgetClass(WBP_HpBar.Class);
+		_hpBar->SetDrawSize(FVector2D(300.f, 25.f));
+	}
+
+	_statComp = CreateDefaultSubobject<UStatDataComponent>(TEXT("STAT"));
+
+	//_minimapspring = createdefaultsubobject<uspringarmcomponent>(text("minimap_spring_arm"));
+	//_minimapspring->setupattachment(getcapsulecomponent());
+	//_minimapspring->setusingabsoluterotation(true);
+	//_minimapspring->targetarmlength = 300.f;
+	//_minimapspring->setrelativerotation(frotator(0.f, -90.f, 0.f));
+	//_minimapspring->bdocollisiontest = false;
 }
-
-
 
 // Called when the game starts or when spawned
 void AUnitCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
 
 }
 
@@ -77,6 +98,12 @@ void AUnitCharacter::PostInitializeComponents()
 		_animIns->GetOnAttackHit().AddUObject(this, &AUnitCharacter::AttackCheck);
 	}
 
+	_hpBar->InitWidget();
+	_hpBar->SetVisibility(false);
+
+	auto hpBarWidget = Cast<UHpBarWidget>(_hpBar->GetUserWidgetObject());
+	if (hpBarWidget)
+		hpBarWidget->BindHp(_statComp);
 
 }
 
@@ -95,10 +122,7 @@ void AUnitCharacter::Tick(float DeltaTime)
 		
 		if (HitResult.bBlockingHit)
 		{
-
 			auto Obj = Cast<AUnitCharacter>(HitResult.Actor);
-			//UE_LOG(LogTemp, Log, TEXT("Hit Actor %s"), *HitResult.Actor->GetName());
-
 			PC->CheckEnemy(Obj, this);
 		}
 	}
@@ -135,43 +159,56 @@ void AUnitCharacter::AttackCheck()
 
 	if (target.IsValid())
 	{
-		target->Damage(this);	
+		FDamageEvent dmgEvent;
+		int attack = _statComp->GetAttack();
+		int dmg = FMath::RandRange(attack, attack * 2);
+		
+		target->TakeDamage(dmg , dmgEvent, GetController(), this);
 	}
-
-	
 
 }
 
-void AUnitCharacter::Damage(AUnitCharacter* Attacker)
+float AUnitCharacter::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 
+	_statComp->OnAttacked(Damage);
+
 	FVector ownedLoc = GetActorLocation();
-	FVector enemyLoc = Attacker->GetActorLocation();
+	FVector enemyLoc = DamageCauser->GetActorLocation();
 	FRotator destRot = UKismetMathLibrary::FindLookAtRotation(ownedLoc, enemyLoc);
 	SetActorRotation(destRot);
-
-	int32 dmg = FMath::RandRange(10, 100);
-
-	_hp = FMath::Max(0, _hp - dmg);
-
-	UE_LOG(LogTemp, Log, TEXT("Hp %d") , _hp);
-
-	UWorld* world = GetWorld();
-
-	if (world == nullptr)
-		return;
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 	FRotator rotator;
 	FVector  SpawnLocation = GetActorLocation();
-	SpawnLocation.Z += 50.f;
+	SpawnLocation.Z += 200.f;
 
 	auto dmgActor = Cast<ADmgTextActor>(
-		world->SpawnActor<AActor>(_dmgActor, SpawnLocation, rotator, SpawnParams));
+		GetWorld()->SpawnActor<AActor>(_dmgActor, SpawnLocation, rotator, SpawnParams));
 
-	dmgActor->UpdateDamage(dmg);
+	dmgActor->UpdateDamage(Damage);
 
+	VisibleHpBar();
+
+	return Damage;
+}
+
+
+void AUnitCharacter::VisibleHpBar()
+{
+	UWorld* world = GetWorld();
+
+	world->GetTimerManager().ClearTimer(timerHandle);
+
+	_hpBar->SetVisibility(true);
+
+
+	world->GetTimerManager().SetTimer(timerHandle, FTimerDelegate::CreateLambda([&]()
+		{
+			_hpBar->SetVisibility(false);
+
+		}), 1.5f, false);
 }
 
 void AUnitCharacter::OnAttackMontageEnded(UAnimMontage* montage, bool bInteruppted)
