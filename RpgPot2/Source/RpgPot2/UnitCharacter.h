@@ -17,21 +17,26 @@ class RPGPOT2_API AUnitCharacter : public ACharacter
 public:
 	// Sets default values for this character's properties
 	AUnitCharacter();
+	//FSM 
+	enum GameStates { IDLE, ATTACK, DEAD };
+	enum GameEvents { ON_ENTER, ON_UPDATE };
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	virtual void PostInitializeComponents() override;
 	
+	GameStates _gameState = GameStates::IDLE;
+	GameEvents _gameEvent = GameEvents::ON_ENTER;
 
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
 public:
+
+	//idle
+	void SearchActorInfo();
 
 	void Attack();
 	void AttackCheck();
@@ -39,21 +44,47 @@ public:
 	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
 	void VisibleHpBar();
+	void ChangeMinimapColor(FLinearColor color);
 
 	UFUNCTION()
 	void OnAttackMontageEnded(UAnimMontage* montage, bool bInteruppted);
 
 public:
 	
+	void SetFSMState(GameStates newState);
+	GameStates GetFSMState() { return _gameState; }
+
 	USkeletalMeshComponent* GetOutLineMesh() { return _outLineMesh; }
 	
-	class UUnitAnim* GetUnitAnim() { return _animIns; }
+	TArray<class UUnitAnim*>& GetUnitAnim() { return _animInsArr; }
+
+	class UStatDataComponent* GetStatComp() { return _statComp; }
 	
 	bool IsAttacking() { return _bAttacking; }
 	
 	FOnAttackEnded& GetOnAttackEnded() { return _onAttackEnded; }
 
 private:
+
+	//FSM 
+	void FSMUpdate();
+
+	void IdleEnter();
+	void IdleUpdate();
+	void IdleExit();
+
+	void AttackEnter();
+	void AttackUpdate();
+	void AttackExit();
+
+	void DeadEnter();
+	void DeadUpdate();
+	void DeadExit();
+
+
+private:
+
+	//기본 카메라 + 메쉬
 
 	UPROPERTY(VisibleAnywhere)
 	class USpringArmComponent* _springArm;
@@ -64,19 +95,19 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Pawn")
 	float _targetArmLength = 800.f;
 	
+	//0 : 기본 메시 , 1 : 아웃라인 메시. 
+	UPROPERTY(VisibleAnywhere)
+	TArray<class UUnitAnim*> _animInsArr;
+
 	UPROPERTY(EditAnywhere, Category = "Mesh")
 	class USkeletalMeshComponent* _outLineMesh;
 
 	UPROPERTY(EditAnywhere, Category = "Mesh")
 	class UMaterial* _outLineMat;
-	
-	UPROPERTY(EditAnywhere, Category = "Mesh")
-	TArray<class UMaterial*> _originMats;
 
-	UPROPERTY(VisibleAnywhere)
-	class UUnitAnim* _animIns;
+private:
 
-	bool _bAttacking = false;
+	//UI
 
 	UPROPERTY(VisibleAnyWhere, Category = "UI")
 	TSubclassOf<class AActor> _dmgActor;
@@ -84,22 +115,29 @@ private:
 	UPROPERTY(VisibleAnyWhere, Category = "UI")
 	class UWidgetComponent* _hpBar; 
 
+	FTimerHandle _hpBarTimerHandle;
+
+	bool _bAttacking = false;
+
 	FOnAttackEnded _onAttackEnded;
 
-	FTimerHandle timerHandle;
+private:
 
-	UPROPERTY(VisibleAnywhere)
+	//스탯
+
+	UPROPERTY(VisibleAnywhere,  Category = "Stat")
 	class UStatDataComponent* _statComp;
 
-	//UPROPERTY(VisibleAnywhere)
-	//class USpringArmComponent* _minimapSpring;
+	//미니맵
+private:
 
-	//UPROPERTY(VisibleAnywhere)
-	//class USceneCaptureComponent2D* _minimapCam;
+	UPROPERTY(VisibleAnywhere)
+	class USpringArmComponent* _minimapSpring;
 
-	//UPROPERTY(VisibleAnywhere)
-	//class UPaperSpriteComponent* _minimapIcon; 
+	UPROPERTY(VisibleAnywhere)
+	class USceneCaptureComponent2D* _minimapCam;
 
-
+	UPROPERTY(VisibleAnywhere)
+	class UPaperSpriteComponent* _minimapIcon; 
 
 };

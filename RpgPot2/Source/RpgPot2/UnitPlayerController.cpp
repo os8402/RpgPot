@@ -9,6 +9,7 @@
 #include "UnitAnim.h"
 #include <Kismet/KismetMathLibrary.h>
 #include "InGameMainWidget.h"
+#include "StatDataComponent.h"
 
 AUnitPlayerController::AUnitPlayerController()
 {
@@ -42,20 +43,39 @@ void AUnitPlayerController::BeginPlay()
 	Super::BeginPlay();
 	_ingameMainUI = CreateWidget<UInGameMainWidget>(this, _ingameMainClass);
 	_ingameMainUI->AddToViewport();
+
+	auto unitCharacter = Cast<AUnitCharacter>(GetPawn());
+	if (unitCharacter)
+	{
+		//조종하는 캐릭터만 연두색
+		unitCharacter->ChangeMinimapColor(FLinearColor(0.f, 1.f, 0.f, 1.f));
+	}
+
 }
 
 void AUnitPlayerController::PlayerTick(float DeltaTime)
 {
 	Super::PlayerTick(DeltaTime);
 
-	if (_bClickMouse)
-	{
-		MoveToMouseCursor();
-	}
+	_owned = Cast<AUnitCharacter>(GetCharacter());
 
-	if (_bAttacking)
+	if (_owned)
 	{
-		ChaseEnemy();
+		AUnitCharacter::GameStates state = _owned->GetFSMState();
+
+		if (state == AUnitCharacter::DEAD)
+			return;
+
+		if (_bClickMouse)
+		{
+			MoveToMouseCursor();
+		}
+
+		if (state == AUnitCharacter::ATTACK)
+		{
+			ChaseEnemy();
+		}
+
 	}
 
 }
@@ -63,7 +83,6 @@ void AUnitPlayerController::PlayerTick(float DeltaTime)
 void AUnitPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
-
 
 	InputComponent->BindAction("Move", IE_Pressed, this, &AUnitPlayerController::OnMovePressed);
 	InputComponent->BindAction("Move", IE_Released, this, &AUnitPlayerController::OnMoveReleased);
@@ -75,80 +94,130 @@ void AUnitPlayerController::MoveToMouseCursor()
 {
 	_bClickMouse = true;
 
-	_bAttacking = false;
-
+	if (_owned == nullptr)
+		return;
 
 	FHitResult Hit;
 	GetHitResultUnderCursor(ECC_Pawn, false, Hit);
 
-
-	auto owned = Cast<AUnitCharacter>(GetCharacter());
-	if (owned == nullptr)
+	if (Hit.bBlockingHit == false)
 		return;
 
-	if (Hit.bBlockingHit)
+	auto hit = Cast<AUnitCharacter>(Hit.Actor);
+
+
+	AUnitCharacter::GameStates state = _owned->GetFSMState();
+
+	switch (state)
 	{
+	case AUnitCharacter::IDLE:
+
+		//적을 타겟팅 하고 있었으면
+		//공격 대상으로 변경 
+
+		if (_currentSeeTarget.IsValid())
+		{	
+			if (hit && hit == _currentSeeTarget.Get())
+			{
+				_enemyTarget = _currentSeeTarget.Get();
+				_enemyTarget.Get()->GetOutLineMesh()->SetVisibility(true);
+
+				targetHandle = _enemyTarget.Get()->GetStatComp()->GetOnUnitDied()
+					.AddUObject(this, &AUnitPlayerController::SetTargetEmpty);
+
+				_owned->SetFSMState(AUnitCharacter::ATTACK);
+				return;
+			}
+		}
+	
+		break;
+	case AUnitCharacter::ATTACK:
+
+		//TODO : 공격 취소 과정
+		
 		if (_enemyTarget.IsValid())
 		{
-			auto Obj = Cast<AUnitCharacter>(Hit.Actor);
-			
-			if (Obj && Obj == _enemyTarget.Get())
+			if (hit && hit == _enemyTarget.Get())
 			{
-				_bAttacking = true;
+				//여전히 같은 대상을 가리키고 있으므로... Return
 				return;
-
 			}
-			_enemyTarget.Get()->GetOutLineMesh()->SetVisibility(false);
 		}
+		
+		//취소 진행
+		_owned->SetFSMState(AUnitCharacter::IDLE);
 
-		//_bAttacking = false;
-		owned->GetUnitAnim()->StopAllMontages(.1f);
+		_enemyTarget.Get()->GetStatComp()->GetOnUnitDied()
+			.Remove(targetHandle);
+
+		_enemyTarget.Get()->GetOutLineMesh()->SetVisibility(false);
 		_enemyTarget.Reset();
+		
+		break;
 
-		SetMoveDest(Hit.ImpactPoint);
 	}
+
+	for (auto animIns : _owned->GetUnitAnim())
+	{
+		animIns->StopAllMontages(.1f);
+	}
+
+	//전부 걸러졌으면 그땐 진짜 이동임. 
+	SetMoveDest(Hit.ImpactPoint);
+
+
 }
-
-
 
 void AUnitPlayerController::SetMoveDest(const FVector DestLocation)
 {
-	APawn* const myPawn = GetPawn();
 
-	if (myPawn == nullptr)
+	if (_owned == nullptr)
 		return;
 
-	
-	float const dist = FVector::Dist(DestLocation, myPawn->GetActorLocation());
+	float const dist = FVector::Dist(DestLocation, _owned->GetActorLocation());
 
 	if (dist > 100.f)
 	{
 		UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, DestLocation);
 	}
 
-	
 }
 
-void AUnitPlayerController::CheckEnemy(AUnitCharacter* Enemy , AUnitCharacter* MyCharacter)
+void AUnitPlayerController::CheckActorOther(AUnitCharacter* other)
 {
+	if (_owned == nullptr)
+		return;
 
-	if (Enemy && MyCharacter != Enemy)
+	
+	//타겟이 없거나 , 기존에 잡아둔 타겟과 다르고, 내가 아닐 때. 
+	if (other && _owned != other)
 	{
-		SetMouseCursorWidget(EMouseCursor::Default, _cursorAttack->GetUserWidgetObject());
-		_enemyTarget = Enemy;
-		_enemyTarget.Get()->GetOutLineMesh()->SetVisibility(true);
 
+		//상대방이 죽었으면 탐지 x
+		if (other->GetFSMState() == AUnitCharacter::DEAD)
+			return;
+
+		SetMouseCursorWidget(EMouseCursor::Default, _cursorAttack->GetUserWidgetObject());
+
+		_currentSeeTarget = other;
+		
+		other->GetOutLineMesh()->SetVisibility(true);
 	}	
+
 	else
 	{
 		SetMouseCursorWidget(EMouseCursor::Default, _cursorBasic->GetUserWidgetObject());
-		
-		if (_bAttacking == false)
+
+		if (_currentSeeTarget.IsValid())
 		{
 			if (_enemyTarget.IsValid())
-				_enemyTarget.Get()->GetOutLineMesh()->SetVisibility(false);
-
-			_enemyTarget.Reset();
+			{
+				if (_currentSeeTarget.Get() == _enemyTarget.Get())
+					return;
+			}
+			
+			_currentSeeTarget.Get()->GetOutLineMesh()->SetVisibility(false);
+			_currentSeeTarget.Reset();
 		}
 
 	}
@@ -157,15 +226,17 @@ void AUnitPlayerController::CheckEnemy(AUnitCharacter* Enemy , AUnitCharacter* M
 
 void AUnitPlayerController::ChaseEnemy()
 {
-	auto owned = Cast<AUnitCharacter>(GetCharacter());
-	
 
-	if (owned == nullptr)
+	if (_owned == nullptr)
 		return;
+
+	if (_enemyTarget.IsValid() == false)
+		return;
+
 
 	float const dist = FVector::Dist(
 		_enemyTarget.Get()->GetActorLocation(),
-		owned->GetActorLocation());
+		_owned->GetActorLocation());
 
 	if (dist > 200.f)
 	{
@@ -173,8 +244,8 @@ void AUnitPlayerController::ChaseEnemy()
 	}
 	else
 	{	
-		UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, owned->GetActorLocation());
-		AttackEnemy(owned);
+		UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, _owned->GetActorLocation());
+		AttackEnemy(_owned);
 	}
 
 	
@@ -197,6 +268,17 @@ void AUnitPlayerController::AttackEnemy(AUnitCharacter* owned)
 
 	owned->Attack();
 
+}
+
+void AUnitPlayerController::SetTargetEmpty()
+{
+	if (_enemyTarget.IsValid())
+	{
+		_enemyTarget.Reset();
+
+		_owned->SetFSMState(AUnitCharacter::IDLE);
+
+	}
 }
 
 void AUnitPlayerController::OnMovePressed()

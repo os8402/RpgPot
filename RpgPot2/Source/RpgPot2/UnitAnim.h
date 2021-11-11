@@ -33,11 +33,17 @@ public:
 	
 	FOnAttackHit& GetOnAttackHit() { return _onAttackHit; }
 
+	void SetDead() { StopAllMontages(.1f); _bDead = true; }
+
 
 private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pawn", Meta = (AllowPrivateAccess=true));
 	float _speed;
+
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pawn", Meta = (AllowPrivateAccess = true));
+	bool _bDead;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Pawn, meta = (AllowPrivateAccess = true))
 	UAnimMontage* _attackMontage;

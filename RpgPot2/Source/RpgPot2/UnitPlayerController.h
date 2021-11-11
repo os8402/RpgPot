@@ -21,21 +21,21 @@ public:
 	virtual void PlayerTick(float DeltaTime) override;
 	virtual void SetupInputComponent() override;
 
-
-
 public:
 
 	void MoveToMouseCursor();
 
 	void SetMoveDest(const FVector DestLocation);
 
-	void CheckEnemy(class AUnitCharacter* Enemy, class AUnitCharacter* MyCharacter);
+	void CheckActorOther(class AUnitCharacter* other);
 	void ChaseEnemy();
 	void AttackEnemy(AUnitCharacter* owned);
 
+	//타겟이 사라질 경우
+	void SetTargetEmpty();
+
 	void OnMovePressed();
 	void OnMoveReleased();
-
 
 
 public:
@@ -45,8 +45,6 @@ public:
 private:
 	bool _bClickMouse = 0;
 
-	UPROPERTY(EditAnywhere, Category = "Cursor")
-	TSubclassOf<class UUserWidget> _cursorTest;
 
 	UPROPERTY(VisibleAnywhere)
 	class UWidgetComponent* _cursorBasic;
@@ -54,10 +52,18 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	class UWidgetComponent* _cursorAttack;
 
+	//현재 마우스로 보고 있는 타겟 정보
 	UPROPERTY(VisibleAnywhere)
-	TWeakObjectPtr<AUnitCharacter> _enemyTarget;
+	TWeakObjectPtr<class AUnitCharacter> _currentSeeTarget;
 
-	bool _bAttacking = false; 
+	//공격 진행을 위한 타겟. 
+	UPROPERTY(VisibleAnywhere)
+	TWeakObjectPtr<class AUnitCharacter> _enemyTarget;
+
+	FDelegateHandle targetHandle;
+
+	UPROPERTY(VisibleAnywhere)
+	class AUnitCharacter* _owned; 
 
 	UPROPERTY(EditDefaultsOnly, Category="UI")
 	TSubclassOf<class UInGameMainWidget> _ingameMainClass;

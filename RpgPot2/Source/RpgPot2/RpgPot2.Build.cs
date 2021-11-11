@@ -8,7 +8,7 @@ public class RpgPot2 : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" , "NavigationSystem", "AIModule" , "UMG"});
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" , "NavigationSystem", "AIModule" , "UMG" , "Paper2D" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

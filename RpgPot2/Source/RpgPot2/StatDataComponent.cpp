@@ -52,6 +52,11 @@ void UStatDataComponent::SetHp(int32 newHp)
 {
 	_hp = FMath::Max(0, newHp);
 
+	if (_hp <= 0)
+	{
+		_onUnitDied.Broadcast();
+	}
+
 	_onHpChanged.Broadcast();
 }
 

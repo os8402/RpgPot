@@ -7,6 +7,8 @@
 #include <Components/CapsuleComponent.h>
 #include <GameFramework/CharacterMovementComponent.h>
 #include <Components/WidgetComponent.h>
+#include <Components/SceneCaptureComponent2D.h>
+#include "PaperSpriteComponent.h"
 #include "UnitPlayerController.h"
 #include "UnitAnim.h"
 #include <Kismet/KismetMathLibrary.h>
@@ -46,7 +48,7 @@ AUnitCharacter::AUnitCharacter()
 	
 
 	_outLineMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("OUTLINE"));
-	_outLineMesh->SetupAttachment(RootComponent);
+	_outLineMesh->SetupAttachment(GetCapsuleComponent());
 	_outLineMesh->SetVisibility(false);
 
 	static ConstructorHelpers::FObjectFinder<UBlueprint> DT(TEXT("Blueprint'/Game/Blueprints/BP_FloatText.BP_FloatText'"));
@@ -71,12 +73,19 @@ AUnitCharacter::AUnitCharacter()
 
 	_statComp = CreateDefaultSubobject<UStatDataComponent>(TEXT("STAT"));
 
-	//_minimapspring = createdefaultsubobject<uspringarmcomponent>(text("minimap_spring_arm"));
-	//_minimapspring->setupattachment(getcapsulecomponent());
-	//_minimapspring->setusingabsoluterotation(true);
-	//_minimapspring->targetarmlength = 300.f;
-	//_minimapspring->setrelativerotation(frotator(0.f, -90.f, 0.f));
-	//_minimapspring->bdocollisiontest = false;
+	_minimapSpring = CreateDefaultSubobject<USpringArmComponent>(TEXT("MINIMAP_SPRING"));
+	_minimapSpring->SetupAttachment(GetCapsuleComponent());
+	_minimapSpring->SetUsingAbsoluteRotation(true);
+	_minimapSpring->TargetArmLength = 300.f;
+	_minimapSpring->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
+	_minimapSpring->bDoCollisionTest = false;
+
+	_minimapCam = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("MINIMAP_CAM"));
+	_minimapCam->SetupAttachment(_minimapSpring);
+
+	_minimapIcon = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("MINIMAP_ICON"));
+	_minimapIcon->SetupAttachment(GetCapsuleComponent());
+
 }
 
 // Called when the game starts or when spawned
@@ -84,19 +93,36 @@ void AUnitCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+
 }
 
 void AUnitCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
-	_animIns = Cast<UUnitAnim>(GetMesh()->GetAnimInstance());
+	UUnitAnim* _originAnimIns = Cast<UUnitAnim>(GetMesh()->GetAnimInstance());
+	UUnitAnim* _outLineAnimIns = Cast<UUnitAnim>(_outLineMesh->GetAnimInstance());
 
-	if (_animIns)
+	_animInsArr.Add(_originAnimIns);
+	_animInsArr.Add(_outLineAnimIns);
+
+
+	for (auto& animIns : _animInsArr)
 	{
-		_animIns->OnMontageEnded.AddDynamic(this, &AUnitCharacter::OnAttackMontageEnded);
-		_animIns->GetOnAttackHit().AddUObject(this, &AUnitCharacter::AttackCheck);
+		if (animIns)
+		{
+			animIns->OnMontageEnded.AddDynamic(this, &AUnitCharacter::OnAttackMontageEnded);
+			
+			//아웃라인 메시는 공격판정 해제
+			if(_outLineAnimIns != animIns)
+				animIns->GetOnAttackHit().AddUObject(this, &AUnitCharacter::AttackCheck);
+			//bind
+			_statComp->GetOnUnitDied().AddUObject(animIns, &UUnitAnim::SetDead);
+
+		}
 	}
+
+	_statComp->GetOnUnitDied().AddUObject(this, &AUnitCharacter::SetFSMState , GameStates::DEAD);
 
 	_hpBar->InitWidget();
 	_hpBar->SetVisibility(false);
@@ -105,6 +131,9 @@ void AUnitCharacter::PostInitializeComponents()
 	if (hpBarWidget)
 		hpBarWidget->BindHp(_statComp);
 
+	//처음엔 빨강으로 고정
+	ChangeMinimapColor(FLinearColor(1.f, 0.f, 0.f, 1.f));
+
 }
 
 // Called every frame
@@ -112,6 +141,14 @@ void AUnitCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	SearchActorInfo();
+
+	FSMUpdate();
+
+}
+
+void AUnitCharacter::SearchActorInfo()
+{
 	auto PC = Cast<AUnitPlayerController>(GetController());
 
 	if (PC)
@@ -119,29 +156,24 @@ void AUnitCharacter::Tick(float DeltaTime)
 		FHitResult HitResult;
 		PC->GetHitResultUnderCursor(ECC_Pawn, true, HitResult);
 
-		
 		if (HitResult.bBlockingHit)
 		{
 			auto Obj = Cast<AUnitCharacter>(HitResult.Actor);
-			PC->CheckEnemy(Obj, this);
+			PC->CheckActorOther(Obj);
 		}
 	}
-
 }
 
-// Called to bind functionality to input
-void AUnitCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-}
 
 void AUnitCharacter::Attack()
 {
 	if (_bAttacking)
 		return;
 
-	_animIns->PlayAttackMontage();
+	for (auto animIns : GetUnitAnim())
+	{
+		animIns->PlayAttackMontage();
+	}
 
 	_bAttacking = true;
 	
@@ -199,16 +231,21 @@ void AUnitCharacter::VisibleHpBar()
 {
 	UWorld* world = GetWorld();
 
-	world->GetTimerManager().ClearTimer(timerHandle);
+	world->GetTimerManager().ClearTimer(_hpBarTimerHandle);
 
 	_hpBar->SetVisibility(true);
 
 
-	world->GetTimerManager().SetTimer(timerHandle, FTimerDelegate::CreateLambda([&]()
+	world->GetTimerManager().SetTimer(_hpBarTimerHandle, FTimerDelegate::CreateLambda([&]()
 		{
 			_hpBar->SetVisibility(false);
 
 		}), 1.5f, false);
+}
+
+void AUnitCharacter::ChangeMinimapColor(FLinearColor color)
+{
+	_minimapIcon->SetSpriteColor(color);
 }
 
 void AUnitCharacter::OnAttackMontageEnded(UAnimMontage* montage, bool bInteruppted)
@@ -217,3 +254,125 @@ void AUnitCharacter::OnAttackMontageEnded(UAnimMontage* montage, bool bInteruppt
 	_onAttackEnded.Broadcast();
 }
 
+
+void AUnitCharacter::FSMUpdate()
+{
+	switch (_gameState)
+	{
+	case AUnitCharacter::IDLE:
+
+		if (_gameEvent == GameEvents::ON_ENTER)
+			IdleEnter();
+		
+		else if (_gameEvent == GameEvents::ON_UPDATE)
+			IdleUpdate();
+		
+		break;
+
+	case AUnitCharacter::ATTACK:
+
+		if (_gameEvent == GameEvents::ON_ENTER)
+			AttackEnter();
+	
+		else if (_gameEvent == GameEvents::ON_UPDATE)
+			AttackUpdate();
+	
+		break;
+
+	case AUnitCharacter::DEAD:
+
+		if (_gameEvent == GameEvents::ON_ENTER)
+			DeadEnter();
+
+		else if (_gameEvent == GameEvents::ON_UPDATE)
+			DeadUpdate();
+		
+		break;
+
+	default:
+		break;
+	}
+}
+
+void AUnitCharacter::IdleEnter()
+{
+	_gameEvent = GameEvents::ON_UPDATE;
+}
+
+void AUnitCharacter::IdleUpdate()
+{
+	//TODO
+
+}
+
+void AUnitCharacter::IdleExit()
+{
+	//TODO
+}
+
+void AUnitCharacter::AttackEnter()
+{
+	_gameEvent = GameEvents::ON_UPDATE;
+
+
+}
+
+void AUnitCharacter::AttackUpdate()
+{
+	//Attack();
+}
+
+void AUnitCharacter::AttackExit()
+{
+	//TODO
+}
+
+void AUnitCharacter::DeadEnter()
+{
+	_gameEvent = GameEvents::ON_UPDATE;
+
+	GetWorld()->GetTimerManager().ClearTimer(_hpBarTimerHandle);
+
+	_hpBar->SetVisibility(false);
+	_outLineMesh->SetVisibility(false);
+
+	//TODO : 공격한 상대방에게 나 죽었다고 알려야 함.. 
+
+
+
+	//TODO : 마을 부활 or 게임 끝내기 
+
+
+}
+
+void AUnitCharacter::DeadUpdate()
+{
+	//TODO
+}
+
+void AUnitCharacter::DeadExit()
+{
+	//TODO
+}
+
+void AUnitCharacter::SetFSMState(GameStates newState)
+{
+	switch (_gameState)
+	{
+	case AUnitCharacter::IDLE:
+		IdleExit();
+		break;
+	case AUnitCharacter::ATTACK:
+		AttackExit();
+		break;
+	case AUnitCharacter::DEAD:
+		DeadExit();
+		break;
+	default:
+		UE_LOG(LogTemp, Error, TEXT("존재하지않은 FSM"), newState);
+		break;
+	}
+
+	_gameState = newState;
+	_gameEvent = AUnitCharacter::ON_ENTER;
+}

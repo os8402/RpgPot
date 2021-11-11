@@ -8,6 +8,8 @@
 
 
 DECLARE_MULTICAST_DELEGATE(FOnHpChanged)
+DECLARE_MULTICAST_DELEGATE(FOnUnitDied)
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class RPGPOT2_API UStatDataComponent : public UActorComponent
 {
@@ -34,6 +36,8 @@ public:
 	int32 GetLevel() { return _level; }
 	int32 GetAttack() { return _attack; }
 	FOnHpChanged& GetOnHpChanged() { return _onHpChanged; }
+	FOnUnitDied& GetOnUnitDied() { return _onUnitDied; }
+
 
 private:
 
@@ -50,5 +54,5 @@ private:
 	int32 _attack;
 
 	FOnHpChanged _onHpChanged;
-
+	FOnUnitDied _onUnitDied; 
 };
