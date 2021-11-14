@@ -172,33 +172,6 @@ void AUnitCharacter::SearchActorInfo()
 }
 
 
-void AUnitCharacter::ChaseTheEnemy()
-{
-	
-	if (_enemyTarget.IsValid() == false)
-		return;
-
-	auto playerController = Cast<AUnitPlayerController>(GetController());
-
-	if (playerController == nullptr)
-		return;
-
-
-	float const dist = FVector::Dist(_enemyTarget.Get()->GetActorLocation(), GetActorLocation());
-
-	if (dist > 200.f)
-	{
-		playerController->SetMoveDest(_enemyTarget.Get()->GetActorLocation());
-	}
-	else
-	{
-		_gameState = GameStates::ATTACK;
-		UAIBlueprintHelperLibrary::SimpleMoveToLocation(playerController, GetActorLocation());
-		
-	}
-
-}
-
 void AUnitCharacter::AttackEnemy()
 {
 	if (_bAttacking)
@@ -221,11 +194,14 @@ void AUnitCharacter::AttackEnemy()
 
 	SetActorRotation(destRot);
 
+
 	for (auto animIns : GetUnitAnim())
 	{
 		animIns->PlayAttackMontage();
 	}
 
+
+	_attackIndex = (_attackIndex + 1) % 3;
 
 	
 }
@@ -237,6 +213,9 @@ void AUnitCharacter::AttackCheck()
 	{
 
 		if (_enemyTarget.Get()->GetFSMState() == GameStates::DEAD)
+			return;
+
+		if (this->GetDistanceTo(_enemyTarget.Get()) > 300.f)
 			return;
 		
 	
@@ -261,12 +240,17 @@ void AUnitCharacter::AttackCheck()
 float AUnitCharacter::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 
-	_statComp->OnAttacked(Damage);
+	//AI
+	auto aiController = Cast<AUnitAIController>(GetController());
 
-	FVector ownedLoc = GetActorLocation();
-	FVector enemyLoc = DamageCauser->GetActorLocation();
-	FRotator destRot = UKismetMathLibrary::FindLookAtRotation(ownedLoc, enemyLoc);
-	SetActorRotation(destRot);
+	if (aiController)
+	{
+		aiController->GetBlackboardComponent()->SetValueAsObject(FName(TEXT("Target")), DamageCauser);
+		aiController->GetBlackboardComponent()->SetValueAsVector(FName(TEXT("PatrolPos")), GetActorLocation());
+	}
+		
+
+	_statComp->OnAttacked(Damage);
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
@@ -281,6 +265,7 @@ float AUnitCharacter::TakeDamage(float Damage, struct FDamageEvent const& Damage
 
 	VisibleHpBar();
 
+	
 	return Damage;
 }
 
@@ -306,6 +291,41 @@ void AUnitCharacter::ChangeMinimapColor(FLinearColor color)
 	_minimapIcon->SetSpriteColor(color);
 }
 
+
+
+void AUnitCharacter::DeadCharacter()
+{
+	GetWorld()->GetTimerManager().ClearTimer(_hpBarTimerHandle);
+
+	_hpBar->SetVisibility(false);
+	_outLineMesh->SetVisibility(false);
+
+	auto playerController = Cast<AUnitPlayerController>(GetController());
+	if (playerController)
+	{
+		UAIBlueprintHelperLibrary::SimpleMoveToLocation(playerController, GetActorLocation());
+	}
+
+
+	//AI
+	auto aiController = Cast<AUnitAIController>(GetController());
+
+	if (aiController)
+	{
+		aiController->GetBlackboardComponent()->SetValueAsObject(FName(TEXT("Target")), nullptr);
+		aiController->GetBlackboardComponent()->SetValueAsVector(FName(TEXT("PatrolPos")), GetActorLocation());
+
+		GetWorld()->GetTimerManager().SetTimer(_deadHandle, FTimerDelegate::CreateLambda([&]()
+			{
+				auto gmInstance = Cast<UGMInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
+				gmInstance->DestroyEnemy(_index);
+
+			}), 2.f, false);
+	}
+
+	//TODO : 마을 부활 or 게임 끝내기 
+}
+
 void AUnitCharacter::OnAttackMontageEnded(UAnimMontage* montage, bool bInteruppted)
 {
 	_bAttacking = false;
@@ -319,40 +339,17 @@ void AUnitCharacter::FSMUpdate()
 	{
 	case AUnitCharacter::IDLE:
 
-		if (_gameEvent == GameEvents::ON_ENTER)
-			IdleEnter();
-		
-		else if (_gameEvent == GameEvents::ON_UPDATE)
 			IdleUpdate();
 		
 		break;
 
-	case AUnitCharacter::MOVE:
-
-		if (_gameEvent == GameEvents::ON_ENTER)
-			MoveEnter();
-
-		else if (_gameEvent == GameEvents::ON_UPDATE)
-			MoveUpdate();
-
-		break;
-
 	case AUnitCharacter::ATTACK:
 
-		if (_gameEvent == GameEvents::ON_ENTER)
-			AttackEnter();
-	
-		else if (_gameEvent == GameEvents::ON_UPDATE)
 			AttackUpdate();
 	
 		break;
 
 	case AUnitCharacter::DEAD:
-
-		if (_gameEvent == GameEvents::ON_ENTER)
-			DeadEnter();
-
-		else if (_gameEvent == GameEvents::ON_UPDATE)
 			DeadUpdate();
 		
 		break;
@@ -362,126 +359,45 @@ void AUnitCharacter::FSMUpdate()
 	}
 }
 
-void AUnitCharacter::IdleEnter()
-{
-	_gameEvent = GameEvents::ON_UPDATE;
-
-	for (auto animIns : GetUnitAnim())
-	{
-		animIns->StopAllMontages(.1f);
-	}
-
-}
 
 void AUnitCharacter::IdleUpdate()
 {
-	//TODO
-
-}
-
-void AUnitCharacter::IdleExit()
-{
-	//TODO
-}
-
-void AUnitCharacter::MoveEnter()
-{
-	_gameEvent = GameEvents::ON_UPDATE;
-
-	for (auto animIns : GetUnitAnim())
-	{
-		animIns->StopAllMontages(.1f);
-	}
-
-}
-
-void AUnitCharacter::MoveUpdate()
-{
-	ChaseTheEnemy();
-}
-
-void AUnitCharacter::MoveExit()
-{
-
-}
-
-void AUnitCharacter::AttackEnter()
-{
-	_gameEvent = GameEvents::ON_UPDATE;
 
 
 }
 
 void AUnitCharacter::AttackUpdate()
 {
-	AttackEnemy();
-}
-
-void AUnitCharacter::AttackExit()
-{
-	//TODO
-}
-
-void AUnitCharacter::DeadEnter()
-{
-	_gameEvent = GameEvents::ON_UPDATE;
-
-	GetWorld()->GetTimerManager().ClearTimer(_hpBarTimerHandle);
-
-	_hpBar->SetVisibility(false);
-	_outLineMesh->SetVisibility(false);
-
-
-	//AI
-	auto aiController = Cast<AUnitAIController>(GetController());
-
-	if(aiController)
-		aiController->GetBlackboardComponent()->SetValueAsObject(FName(TEXT("Target")), nullptr);
-
-
-
-	GetWorld()->GetTimerManager().SetTimer(_deadHandle, FTimerDelegate::CreateLambda([&]()
-		{
-			auto gmInstance = Cast<UGMInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
-			gmInstance->DestroyEnemy(_index);
-
-		}),2.f , false);
-
-	//TODO : 마을 부활 or 게임 끝내기 
 
 }
-
 void AUnitCharacter::DeadUpdate()
 {
 	
 }
 
-void AUnitCharacter::DeadExit()
-{
-	//TODO
-}
 
 void AUnitCharacter::SetFSMState(GameStates newState)
 {
+
+	_gameState = newState;
+
 	switch (_gameState)
 	{
 	case AUnitCharacter::IDLE:
-		IdleExit();
+
 		break;
-	case AUnitCharacter::MOVE:
-		IdleExit();
-		break;
+
 	case AUnitCharacter::ATTACK:
-		AttackExit();
+	
 		break;
 	case AUnitCharacter::DEAD:
-		DeadExit();
+
+		DeadCharacter();
 		break;
 	default:
 		UE_LOG(LogTemp, Error, TEXT("존재하지않은 FSM"), newState);
 		break;
 	}
 
-	_gameState = newState;
-	_gameEvent = AUnitCharacter::ON_ENTER;
+	
 }

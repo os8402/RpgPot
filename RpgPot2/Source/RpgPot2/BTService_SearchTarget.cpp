@@ -54,10 +54,13 @@ void UBTService_SearchTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint8*
 					return;
 
 				OwnerComp.GetBlackboardComponent()->SetValueAsObject(FName(TEXT("Target")), myCharacter);
+				owned->SetEnemyTarget(myCharacter);
 
 				//Á×¾úÀ¸¸é Å¸°Ù ÇØÁ¦
 				myCharacter->GetStatComp()->GetOnUnitDied().AddLambda([&]()
-					{
+					{	
+						if (owned == nullptr)
+							return;
 						OwnerComp.GetBlackboardComponent()->SetValueAsObject(FName(TEXT("Target")), nullptr);
 					});
 				

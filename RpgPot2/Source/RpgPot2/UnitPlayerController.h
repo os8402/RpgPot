@@ -28,7 +28,7 @@ public:
 	void SetMoveDest(const FVector DestLocation);
 
 	void CheckActorOther(class AUnitCharacter* other);
-//	void ChaseEnemy();
+	void ChaseEnemy();
 	//void AttackEnemy(AUnitCharacter* owned);
 
 	void PrimaryAttack_CameraShake();
@@ -40,8 +40,10 @@ public:
 	void OnMoveReleased();
 
 
+
 private:
 	bool _bClickMouse = 0;
+	bool _bAttacking = false; 
 
 
 	UPROPERTY(VisibleAnywhere)

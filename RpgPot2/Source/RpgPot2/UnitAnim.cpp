@@ -36,3 +36,14 @@ void UUnitAnim::AnimNotify_AttackHit()
 	_onAttackHit.Broadcast();
 }
 
+void UUnitAnim::JumpToSection(int32 sectionIndex)
+{
+	FName name = GetAttackOnMontageName(sectionIndex);
+	Montage_JumpToSection(name, _attackMontage);
+}
+
+FName UUnitAnim::GetAttackOnMontageName(int32 sectionIndex)
+{
+	return FName(*FString::Printf(TEXT("Attack%d"), sectionIndex));
+}
+

@@ -22,24 +22,21 @@ EBTNodeResult::Type UBTTask_Attack::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 	if (myCharacter->GetFSMState() == AUnitCharacter::DEAD)
 		return EBTNodeResult::Failed;
 
-
 	auto target = Cast<AUnitCharacter>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(FName(TEXT("Target"))));
-	if(target == nullptr)
-		return EBTNodeResult::Failed;
-
-	myCharacter->SetEnemyTarget(target);
-	myCharacter->SetFSMState(AUnitCharacter::ATTACK);
 
 	_bAttacking = true;
+
 	OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName(TEXT("bAttacking")), true);
 
-	myCharacter->GetOnAttackEnded().AddLambda([this]()
+	myCharacter->_onAttackEnded.AddLambda([this]()
 		{
 			_bAttacking = false;
 		});
 
-	return result;
+	myCharacter->AttackEnemy();
+	//myCharacter->SetFSMState(AUnitCharacter::ATTACK);
 
+	return EBTNodeResult::InProgress;
 
 }
 
@@ -50,10 +47,7 @@ void UBTTask_Attack::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemo
 	if (_bAttacking == false)
 	{
 		auto myCharacter = Cast<AUnitCharacter>(OwnerComp.GetAIOwner()->GetPawn());
-		myCharacter->SetFSMState(AUnitCharacter::MOVE);
-
 		OwnerComp.GetBlackboardComponent()->SetValueAsBool(FName(TEXT("bAttacking")), false);
 		FinishLatentTask(OwnerComp, EBTNodeResult::Succeeded);
 	}
-		
 }

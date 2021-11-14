@@ -28,22 +28,28 @@ void UGMInstance::Init()
 
 void UGMInstance::RespawnEnemy()
 {
-	if (_enemeyCount < 1)
+	if (_totalEnemyCount < 5)
 	{
 		FActorSpawnParameters spawnParams;
 
-		int32 x = FMath::RandRange(-1000, 1000);
-		int32 y = FMath::RandRange(-1000, 1000);
+		int32 x = FMath::RandRange(-800, 800);
+		int32 y = FMath::RandRange(-800, 800);
 		FVector spawnLoc = FVector(x, y, 120.f);
 		FRotator spawnRot;
 		
 		auto respawnEnemy = Cast<AUnitCharacter>(
 			GetWorld()->SpawnActor<AActor>(_spawnEnemy, spawnLoc, spawnRot, spawnParams));
 
-		respawnEnemy->SetIndex(_enemeyCount);
+		if (respawnEnemy == nullptr)
+			return;
 
-		_enemyList.Add(_enemeyCount++,  respawnEnemy);
+		int32 key = _totalEnemyCount << 24;
 
+		respawnEnemy->SetIndex(key);
+
+		_enemyList.Add(key++,  respawnEnemy);
+
+		_totalEnemyCount++;
 	}
 
 }
@@ -51,7 +57,7 @@ void UGMInstance::RespawnEnemy()
 void UGMInstance::DestroyEnemy(int32 index)
 {
 	GetWorld()->DestroyActor(_enemyList[index]);
-	_enemeyCount--;
+	_totalEnemyCount--;
 }
 
 FUnitData* UGMInstance::GetStatData(int32 level)

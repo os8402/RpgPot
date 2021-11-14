@@ -11,6 +11,9 @@
 #include "InGameMainWidget.h"
 #include "StatDataComponent.h"
 #include <Camera/CameraShakeBase.h>
+#include <GameFramework/CharacterMovementComponent.h>
+#include <Components/SceneCaptureComponent2D.h>
+#include "InGameMainWidget.h"
 
 AUnitPlayerController::AUnitPlayerController()
 {
@@ -56,10 +59,16 @@ void AUnitPlayerController::BeginPlay()
 	if (unitCharacter)
 	{
 		//조종하는 캐릭터만 연두색
+		unitCharacter->GetMinimapCam()->CaptureSortPriority = -1;
 		unitCharacter->ChangeMinimapColor(FLinearColor(0.f, 1.f, 0.f, 1.f));
+		unitCharacter->GetStatComp()->SetHp(1000);
+		unitCharacter->GetCharacterMovement()->MaxWalkSpeed = 1000.f;
 	}
 
-	unitCharacter->GetStatComp()->SetHp(1000);
+	_owned = Cast<AUnitCharacter>(GetCharacter());
+
+	if (_ingameMainUI)
+		_ingameMainUI->BindHp(_owned->GetStatComp());
 
 }
 
@@ -77,10 +86,10 @@ void AUnitPlayerController::PlayerTick(float DeltaTime)
 			return;
 
 		if (_bClickMouse)
-		{
 			MoveToMouseCursor();
-		}
-
+		
+		if(_bAttacking)
+			ChaseEnemy();
 	}
 
 }
@@ -98,6 +107,7 @@ void AUnitPlayerController::SetupInputComponent()
 void AUnitPlayerController::MoveToMouseCursor()
 {
 	_bClickMouse = true;
+	_bAttacking = false;
 
 	if (_owned == nullptr)
 		return;
@@ -130,7 +140,8 @@ void AUnitPlayerController::MoveToMouseCursor()
 				targetHandle = _owned->GetEnemyTarget().Get()->GetStatComp()->GetOnUnitDied()
 					.AddUObject(this, &AUnitPlayerController::SetTargetEmpty);
 
-				_owned->SetFSMState(AUnitCharacter::MOVE);
+				_owned->SetFSMState(AUnitCharacter::ATTACK);
+				_bAttacking = true; 
 				return;
 			}
 		}
@@ -145,6 +156,7 @@ void AUnitPlayerController::MoveToMouseCursor()
 			if (hit && hit == _owned->GetEnemyTarget().Get())
 			{
 				//여전히 같은 대상을 가리키고 있으므로... Return
+				_bAttacking = true;
 				return;
 			}
 		}
@@ -152,12 +164,18 @@ void AUnitPlayerController::MoveToMouseCursor()
 		//취소 진행
 		_owned->SetFSMState(AUnitCharacter::IDLE);
 
-		_owned->GetEnemyTarget().Get()->GetStatComp()->GetOnUnitDied()
-			.Remove(targetHandle);
 
-		_owned->GetEnemyTarget().Get()->GetOutLineMesh()->SetVisibility(false);
-		_owned->GetEnemyTarget().Reset();
-		
+		if (_owned->GetEnemyTarget().IsValid())
+		{
+
+			_owned->GetEnemyTarget().Get()->GetStatComp()->GetOnUnitDied()
+				.Remove(targetHandle);
+
+			_owned->GetEnemyTarget().Get()->GetOutLineMesh()->SetVisibility(false);
+			_owned->GetEnemyTarget().Reset();
+
+		}
+
 		break;
 
 	}
@@ -234,6 +252,27 @@ void AUnitPlayerController::CheckActorOther(AUnitCharacter* other)
 	
 }
 
+
+void AUnitPlayerController::ChaseEnemy()
+{
+	if (_owned->GetEnemyTarget().IsValid() == false)
+		return;
+
+	if (_owned->IsAttacking())
+		return;
+
+	float const dist = FVector::Dist(_owned->GetEnemyTarget().Get()->GetActorLocation(), _owned->GetActorLocation());
+
+	if (dist > 200.f)
+	{
+		SetMoveDest(_owned->GetEnemyTarget().Get()->GetActorLocation());
+	}
+	else
+	{
+		UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, _owned->GetActorLocation());
+		_owned->AttackEnemy();
+	}
+}
 
 void AUnitPlayerController::PrimaryAttack_CameraShake()
 {

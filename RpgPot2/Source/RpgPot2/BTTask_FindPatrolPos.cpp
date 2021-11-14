@@ -2,6 +2,7 @@
 
 #include "BTTask_FindPatrolPos.h"
 #include "UnitAIController.h"
+#include "UnitCharacter.h"
 #include <NavigationSystem.h>
 #include <Blueprint/AIBlueprintHelperLibrary.h>
 #include <BehaviorTree/BehaviorTree.h>
@@ -18,9 +19,12 @@ EBTNodeResult::Type UBTTask_FindPatrolPos::ExecuteTask(UBehaviorTreeComponent& O
 {
 	EBTNodeResult::Type result = Super::ExecuteTask(OwnerComp, NodeMemory);
 
-	auto currentPawn = OwnerComp.GetAIOwner()->GetPawn();
+	auto owned =  Cast<AUnitCharacter>(OwnerComp.GetAIOwner()->GetPawn());
 
-	if (currentPawn == nullptr)
+	if (owned == nullptr)
+		return EBTNodeResult::Failed;
+
+	if (owned->GetFSMState() == AUnitCharacter::DEAD)
 		return EBTNodeResult::Failed;
 
 

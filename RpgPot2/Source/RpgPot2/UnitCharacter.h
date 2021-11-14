@@ -9,6 +9,7 @@
 
 DECLARE_MULTICAST_DELEGATE(FOnAttackEnded)
 
+
 UCLASS()
 class RPGPOT2_API AUnitCharacter : public ACharacter
 {
@@ -17,9 +18,9 @@ class RPGPOT2_API AUnitCharacter : public ACharacter
 public:
 	// Sets default values for this character's properties
 	AUnitCharacter();
+
 	//FSM 
-	enum GameStates { IDLE, MOVE, ATTACK, DEAD };
-	enum GameEvents { ON_ENTER, ON_UPDATE };
+	enum  GameStates { IDLE, ATTACK, DEAD };
 
 protected:
 	// Called when the game starts or when spawned
@@ -27,7 +28,6 @@ protected:
 	virtual void PostInitializeComponents() override;
 
 	GameStates _gameState = GameStates::IDLE;
-	GameEvents _gameEvent = GameEvents::ON_ENTER;
 
 public:
 	// Called every frame
@@ -38,8 +38,6 @@ public:
 	//idle
 	void SearchActorInfo();
 
-
-	void ChaseTheEnemy();
 	void AttackEnemy();
 	void AttackCheck();
 
@@ -47,9 +45,11 @@ public:
 
 	void VisibleHpBar();
 	void ChangeMinimapColor(FLinearColor color);
+	void DeadCharacter();
+
 
 	UFUNCTION()
-		void OnAttackMontageEnded(UAnimMontage* montage, bool bInteruppted);
+	void OnAttackMontageEnded(UAnimMontage* montage, bool bInteruppted);
 
 public:
 
@@ -67,32 +67,23 @@ public:
 
 	bool IsAttacking() { return _bAttacking; }
 
+	FOnAttackEnded _onAttackEnded;
 	FOnAttackEnded& GetOnAttackEnded() { return _onAttackEnded; }
 	TWeakObjectPtr<class AUnitCharacter>& GetEnemyTarget(){ return _enemyTarget;}
 	void SetEnemyTarget(class AUnitCharacter* target) { _enemyTarget = target; }
-	
+
+	class USceneCaptureComponent2D* GetMinimapCam() { return _minimapCam; }
+
 private:
-
-
 
 	//FSM 
 	void FSMUpdate();
 
-	void IdleEnter();
+	
 	void IdleUpdate();
-	void IdleExit();
-
-	void MoveEnter();
-	void MoveUpdate();
-	void MoveExit();
-
-	void AttackEnter();
 	void AttackUpdate();
-	void AttackExit();
-
-	void DeadEnter();
 	void DeadUpdate();
-	void DeadExit();
+
 
 private:
 
@@ -130,7 +121,8 @@ private:
 
 	bool _bAttacking = false;
 
-	FOnAttackEnded _onAttackEnded;
+	UPROPERTY()
+	int32 _attackIndex = 0; 
 
 	//Á×À½ Ã³¸®
 private:

@@ -45,7 +45,8 @@ private:
 	UPROPERTY(VisibleAnyWhere, Category = Pawn)
 	TSubclassOf<class AUnitCharacter> _spawnEnemy;  
 		
-	int32 _enemeyCount = 0;
+	int32 _totalEnemyCount = 0;
+	
 
 	UPROPERTY(VisibleAnyWhere, Category = Pawn)
 	TMap<int32,  class AUnitCharacter*> _enemyList; 

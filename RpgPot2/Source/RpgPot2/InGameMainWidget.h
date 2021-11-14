@@ -16,6 +16,9 @@ class RPGPOT2_API UInGameMainWidget : public UUserWidget
 
 public:
 
+	void BindHp(class UStatDataComponent* statComp);
+	void UpdateHp();
+
 
 private:
 
@@ -27,5 +30,7 @@ private:
 
 	UPROPERTY(meta = (BindWidget))
 	class UProgressBar* _PB_MpGauge;
+
+	TWeakObjectPtr<class UStatDataComponent> _currentStatComp;
 	
 };
