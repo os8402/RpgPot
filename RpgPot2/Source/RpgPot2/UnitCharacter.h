@@ -18,18 +18,18 @@ public:
 	// Sets default values for this character's properties
 	AUnitCharacter();
 	//FSM 
-	enum GameStates { IDLE, ATTACK, DEAD };
+	enum GameStates { IDLE, MOVE, ATTACK, DEAD };
 	enum GameEvents { ON_ENTER, ON_UPDATE };
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	virtual void PostInitializeComponents() override;
-	
+
 	GameStates _gameState = GameStates::IDLE;
 	GameEvents _gameEvent = GameEvents::ON_ENTER;
 
-public:	
+public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
@@ -38,7 +38,9 @@ public:
 	//idle
 	void SearchActorInfo();
 
-	void Attack();
+
+	void ChaseTheEnemy();
+	void AttackEnemy();
 	void AttackCheck();
 
 	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
@@ -47,24 +49,31 @@ public:
 	void ChangeMinimapColor(FLinearColor color);
 
 	UFUNCTION()
-	void OnAttackMontageEnded(UAnimMontage* montage, bool bInteruppted);
+		void OnAttackMontageEnded(UAnimMontage* montage, bool bInteruppted);
 
 public:
-	
+
+	void SetIndex(int32 index) { _index = index; }
+	int32 GetIndex() { return _index; };
+
 	void SetFSMState(GameStates newState);
 	GameStates GetFSMState() { return _gameState; }
 
 	USkeletalMeshComponent* GetOutLineMesh() { return _outLineMesh; }
-	
+
 	TArray<class UUnitAnim*>& GetUnitAnim() { return _animInsArr; }
 
 	class UStatDataComponent* GetStatComp() { return _statComp; }
-	
-	bool IsAttacking() { return _bAttacking; }
-	
-	FOnAttackEnded& GetOnAttackEnded() { return _onAttackEnded; }
 
+	bool IsAttacking() { return _bAttacking; }
+
+	FOnAttackEnded& GetOnAttackEnded() { return _onAttackEnded; }
+	TWeakObjectPtr<class AUnitCharacter>& GetEnemyTarget(){ return _enemyTarget;}
+	void SetEnemyTarget(class AUnitCharacter* target) { _enemyTarget = target; }
+	
 private:
+
+
 
 	//FSM 
 	void FSMUpdate();
@@ -72,6 +81,10 @@ private:
 	void IdleEnter();
 	void IdleUpdate();
 	void IdleExit();
+
+	void MoveEnter();
+	void MoveUpdate();
+	void MoveExit();
 
 	void AttackEnter();
 	void AttackUpdate();
@@ -81,6 +94,9 @@ private:
 	void DeadUpdate();
 	void DeadExit();
 
+private:
+
+	int32 _index = 0;
 
 private:
 
@@ -105,10 +121,26 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Mesh")
 	class UMaterial* _outLineMat;
 
+
+private: 
+
+	//공격 진행을 위한 타겟. 
+	UPROPERTY(VisibleAnywhere)
+	TWeakObjectPtr<class AUnitCharacter> _enemyTarget;
+
+	bool _bAttacking = false;
+
+	FOnAttackEnded _onAttackEnded;
+
+	//죽음 처리
+private:
+	//일정시간 지나면 월드에서 제거. 
+	FTimerHandle _deadHandle;
+
+
 private:
 
 	//UI
-
 	UPROPERTY(VisibleAnyWhere, Category = "UI")
 	TSubclassOf<class AActor> _dmgActor;
 
@@ -116,10 +148,6 @@ private:
 	class UWidgetComponent* _hpBar; 
 
 	FTimerHandle _hpBarTimerHandle;
-
-	bool _bAttacking = false;
-
-	FOnAttackEnded _onAttackEnded;
 
 private:
 

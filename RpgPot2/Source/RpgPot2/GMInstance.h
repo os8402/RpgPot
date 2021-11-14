@@ -7,10 +7,6 @@
 #include "Engine/DataTable.h"
 #include "GMInstance.generated.h"
 
-/**
- * 
- */
-
 USTRUCT()
 struct FUnitData : public FTableRowBase
 {
@@ -37,10 +33,22 @@ public:
 	virtual void Init() override;
 
 	FUnitData* GetStatData(int32 level);
-	
+
+	void RespawnEnemy();
+	void DestroyEnemy(int32 index);
 
 private:
 
 	UPROPERTY()
 	class UDataTable* _statData; 
+
+	UPROPERTY(VisibleAnyWhere, Category = Pawn)
+	TSubclassOf<class AUnitCharacter> _spawnEnemy;  
+		
+	int32 _enemeyCount = 0;
+
+	UPROPERTY(VisibleAnyWhere, Category = Pawn)
+	TMap<int32,  class AUnitCharacter*> _enemyList; 
+
+	FTimerHandle _respawnTimer; 
 };

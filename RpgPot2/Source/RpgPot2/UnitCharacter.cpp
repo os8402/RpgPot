@@ -6,6 +6,7 @@
 #include <GameFramework/SpringArmComponent.h>
 #include <Components/CapsuleComponent.h>
 #include <GameFramework/CharacterMovementComponent.h>
+#include <Blueprint/AIBlueprintHelperLibrary.h>
 #include <Components/WidgetComponent.h>
 #include <Components/SceneCaptureComponent2D.h>
 #include "PaperSpriteComponent.h"
@@ -15,6 +16,10 @@
 #include "DmgTextActor.h"
 #include "HpBarWidget.h"
 #include "StatDataComponent.h"
+#include "GMInstance.h"
+#include <kismet/GameplayStatics.h>
+#include "UnitAIController.h"
+#include <BehaviorTree/BlackboardComponent.h>
 
 
 // Sets default values
@@ -86,13 +91,15 @@ AUnitCharacter::AUnitCharacter()
 	_minimapIcon = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("MINIMAP_ICON"));
 	_minimapIcon->SetupAttachment(GetCapsuleComponent());
 
+	AIControllerClass = AUnitAIController::StaticClass();
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+
 }
 
 // Called when the game starts or when spawned
 void AUnitCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-
 
 }
 
@@ -165,37 +172,88 @@ void AUnitCharacter::SearchActorInfo()
 }
 
 
-void AUnitCharacter::Attack()
+void AUnitCharacter::ChaseTheEnemy()
+{
+	
+	if (_enemyTarget.IsValid() == false)
+		return;
+
+	auto playerController = Cast<AUnitPlayerController>(GetController());
+
+	if (playerController == nullptr)
+		return;
+
+
+	float const dist = FVector::Dist(_enemyTarget.Get()->GetActorLocation(), GetActorLocation());
+
+	if (dist > 200.f)
+	{
+		playerController->SetMoveDest(_enemyTarget.Get()->GetActorLocation());
+	}
+	else
+	{
+		_gameState = GameStates::ATTACK;
+		UAIBlueprintHelperLibrary::SimpleMoveToLocation(playerController, GetActorLocation());
+		
+	}
+
+}
+
+void AUnitCharacter::AttackEnemy()
 {
 	if (_bAttacking)
 		return;
+
+	_bAttacking = true;
+
+	FVector ownedLoc = GetActorLocation();
+	FVector enemyLoc = FVector::ZeroVector;
+
+	if (_enemyTarget.IsValid() == false)
+	{
+		_gameState = GameStates::IDLE;
+		return;
+	}
+	
+	enemyLoc = _enemyTarget.Get()->GetActorLocation();
+
+	FRotator destRot = UKismetMathLibrary::FindLookAtRotation(ownedLoc, enemyLoc);
+
+	SetActorRotation(destRot);
 
 	for (auto animIns : GetUnitAnim())
 	{
 		animIns->PlayAttackMontage();
 	}
 
-	_bAttacking = true;
+
 	
 }
 
 void AUnitCharacter::AttackCheck()
 {
 
-	auto controller = Cast<AUnitPlayerController>(GetController());
-
-	if (controller == nullptr)
-		return;
-
-	auto target = controller->GetTarget();
-
-	if (target.IsValid())
+	if (_enemyTarget.IsValid())
 	{
+
+		if (_enemyTarget.Get()->GetFSMState() == GameStates::DEAD)
+			return;
+		
+	
 		FDamageEvent dmgEvent;
 		int attack = _statComp->GetAttack();
 		int dmg = FMath::RandRange(attack, attack * 2);
 		
-		target->TakeDamage(dmg , dmgEvent, GetController(), this);
+
+		_enemyTarget->TakeDamage(dmg , dmgEvent, GetController(), this);
+
+		//플레이어
+		auto controller = Cast<AUnitPlayerController>(GetController());
+
+		if (controller == nullptr)
+			return;
+
+		controller->PrimaryAttack_CameraShake();
 	}
 
 }
@@ -269,6 +327,16 @@ void AUnitCharacter::FSMUpdate()
 		
 		break;
 
+	case AUnitCharacter::MOVE:
+
+		if (_gameEvent == GameEvents::ON_ENTER)
+			MoveEnter();
+
+		else if (_gameEvent == GameEvents::ON_UPDATE)
+			MoveUpdate();
+
+		break;
+
 	case AUnitCharacter::ATTACK:
 
 		if (_gameEvent == GameEvents::ON_ENTER)
@@ -297,6 +365,12 @@ void AUnitCharacter::FSMUpdate()
 void AUnitCharacter::IdleEnter()
 {
 	_gameEvent = GameEvents::ON_UPDATE;
+
+	for (auto animIns : GetUnitAnim())
+	{
+		animIns->StopAllMontages(.1f);
+	}
+
 }
 
 void AUnitCharacter::IdleUpdate()
@@ -310,6 +384,27 @@ void AUnitCharacter::IdleExit()
 	//TODO
 }
 
+void AUnitCharacter::MoveEnter()
+{
+	_gameEvent = GameEvents::ON_UPDATE;
+
+	for (auto animIns : GetUnitAnim())
+	{
+		animIns->StopAllMontages(.1f);
+	}
+
+}
+
+void AUnitCharacter::MoveUpdate()
+{
+	ChaseTheEnemy();
+}
+
+void AUnitCharacter::MoveExit()
+{
+
+}
+
 void AUnitCharacter::AttackEnter()
 {
 	_gameEvent = GameEvents::ON_UPDATE;
@@ -319,7 +414,7 @@ void AUnitCharacter::AttackEnter()
 
 void AUnitCharacter::AttackUpdate()
 {
-	//Attack();
+	AttackEnemy();
 }
 
 void AUnitCharacter::AttackExit()
@@ -336,18 +431,29 @@ void AUnitCharacter::DeadEnter()
 	_hpBar->SetVisibility(false);
 	_outLineMesh->SetVisibility(false);
 
-	//TODO : 공격한 상대방에게 나 죽었다고 알려야 함.. 
+
+	//AI
+	auto aiController = Cast<AUnitAIController>(GetController());
+
+	if(aiController)
+		aiController->GetBlackboardComponent()->SetValueAsObject(FName(TEXT("Target")), nullptr);
 
 
+
+	GetWorld()->GetTimerManager().SetTimer(_deadHandle, FTimerDelegate::CreateLambda([&]()
+		{
+			auto gmInstance = Cast<UGMInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
+			gmInstance->DestroyEnemy(_index);
+
+		}),2.f , false);
 
 	//TODO : 마을 부활 or 게임 끝내기 
-
 
 }
 
 void AUnitCharacter::DeadUpdate()
 {
-	//TODO
+	
 }
 
 void AUnitCharacter::DeadExit()
@@ -360,6 +466,9 @@ void AUnitCharacter::SetFSMState(GameStates newState)
 	switch (_gameState)
 	{
 	case AUnitCharacter::IDLE:
+		IdleExit();
+		break;
+	case AUnitCharacter::MOVE:
 		IdleExit();
 		break;
 	case AUnitCharacter::ATTACK:

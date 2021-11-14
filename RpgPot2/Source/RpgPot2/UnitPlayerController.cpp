@@ -10,6 +10,7 @@
 #include <Kismet/KismetMathLibrary.h>
 #include "InGameMainWidget.h"
 #include "StatDataComponent.h"
+#include <Camera/CameraShakeBase.h>
 
 AUnitPlayerController::AUnitPlayerController()
 {
@@ -36,6 +37,13 @@ AUnitPlayerController::AUnitPlayerController()
 	{
 		_ingameMainClass = WB_Ingame.Class;
 	}
+
+	static ConstructorHelpers::FClassFinder<UMatineeCameraShake> CS_PRIMARY_ATK(TEXT("Blueprint'/Game/Blueprints/BP_CS_PrimaryAttack.BP_CS_PrimaryAttack_C'"));
+	if (CS_PRIMARY_ATK.Succeeded())
+	{
+		_CS_primaryAttack = CS_PRIMARY_ATK.Class;
+	}
+
 }
 
 void AUnitPlayerController::BeginPlay()
@@ -50,6 +58,8 @@ void AUnitPlayerController::BeginPlay()
 		//조종하는 캐릭터만 연두색
 		unitCharacter->ChangeMinimapColor(FLinearColor(0.f, 1.f, 0.f, 1.f));
 	}
+
+	unitCharacter->GetStatComp()->SetHp(1000);
 
 }
 
@@ -69,11 +79,6 @@ void AUnitPlayerController::PlayerTick(float DeltaTime)
 		if (_bClickMouse)
 		{
 			MoveToMouseCursor();
-		}
-
-		if (state == AUnitCharacter::ATTACK)
-		{
-			ChaseEnemy();
 		}
 
 	}
@@ -119,13 +124,13 @@ void AUnitPlayerController::MoveToMouseCursor()
 		{	
 			if (hit && hit == _currentSeeTarget.Get())
 			{
-				_enemyTarget = _currentSeeTarget.Get();
-				_enemyTarget.Get()->GetOutLineMesh()->SetVisibility(true);
+				_owned->SetEnemyTarget(_currentSeeTarget.Get());
+				_owned->GetEnemyTarget().Get()->GetOutLineMesh()->SetVisibility(true);
 
-				targetHandle = _enemyTarget.Get()->GetStatComp()->GetOnUnitDied()
+				targetHandle = _owned->GetEnemyTarget().Get()->GetStatComp()->GetOnUnitDied()
 					.AddUObject(this, &AUnitPlayerController::SetTargetEmpty);
 
-				_owned->SetFSMState(AUnitCharacter::ATTACK);
+				_owned->SetFSMState(AUnitCharacter::MOVE);
 				return;
 			}
 		}
@@ -135,9 +140,9 @@ void AUnitPlayerController::MoveToMouseCursor()
 
 		//TODO : 공격 취소 과정
 		
-		if (_enemyTarget.IsValid())
+		if (_owned->GetEnemyTarget().IsValid())
 		{
-			if (hit && hit == _enemyTarget.Get())
+			if (hit && hit == _owned->GetEnemyTarget().Get())
 			{
 				//여전히 같은 대상을 가리키고 있으므로... Return
 				return;
@@ -147,11 +152,11 @@ void AUnitPlayerController::MoveToMouseCursor()
 		//취소 진행
 		_owned->SetFSMState(AUnitCharacter::IDLE);
 
-		_enemyTarget.Get()->GetStatComp()->GetOnUnitDied()
+		_owned->GetEnemyTarget().Get()->GetStatComp()->GetOnUnitDied()
 			.Remove(targetHandle);
 
-		_enemyTarget.Get()->GetOutLineMesh()->SetVisibility(false);
-		_enemyTarget.Reset();
+		_owned->GetEnemyTarget().Get()->GetOutLineMesh()->SetVisibility(false);
+		_owned->GetEnemyTarget().Reset();
 		
 		break;
 
@@ -164,7 +169,6 @@ void AUnitPlayerController::MoveToMouseCursor()
 
 	//전부 걸러졌으면 그땐 진짜 이동임. 
 	SetMoveDest(Hit.ImpactPoint);
-
 
 }
 
@@ -199,6 +203,12 @@ void AUnitPlayerController::CheckActorOther(AUnitCharacter* other)
 
 		SetMouseCursorWidget(EMouseCursor::Default, _cursorAttack->GetUserWidgetObject());
 
+		if (_currentSeeTarget.IsValid())
+		{
+			_currentSeeTarget.Get()->GetOutLineMesh()->SetVisibility(false);
+			_currentSeeTarget.Reset();
+		}
+
 		_currentSeeTarget = other;
 		
 		other->GetOutLineMesh()->SetVisibility(true);
@@ -210,9 +220,9 @@ void AUnitPlayerController::CheckActorOther(AUnitCharacter* other)
 
 		if (_currentSeeTarget.IsValid())
 		{
-			if (_enemyTarget.IsValid())
+			if (_owned->GetEnemyTarget().IsValid())
 			{
-				if (_currentSeeTarget.Get() == _enemyTarget.Get())
+				if (_currentSeeTarget.Get() == _owned->GetEnemyTarget().Get())
 					return;
 			}
 			
@@ -224,58 +234,18 @@ void AUnitPlayerController::CheckActorOther(AUnitCharacter* other)
 	
 }
 
-void AUnitPlayerController::ChaseEnemy()
+
+void AUnitPlayerController::PrimaryAttack_CameraShake()
 {
-
-	if (_owned == nullptr)
-		return;
-
-	if (_enemyTarget.IsValid() == false)
-		return;
-
-
-	float const dist = FVector::Dist(
-		_enemyTarget.Get()->GetActorLocation(),
-		_owned->GetActorLocation());
-
-	if (dist > 200.f)
-	{
-		SetMoveDest(_enemyTarget.Get()->GetActorLocation());
-	}
-	else
-	{	
-		UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, _owned->GetActorLocation());
-		AttackEnemy(_owned);
-	}
-
-	
-}
-
-void AUnitPlayerController::AttackEnemy(AUnitCharacter* owned)
-{
-	if (owned == nullptr || owned->IsAttacking())
-		return;
-
-	FVector ownedLoc = owned->GetActorLocation();
-	FVector enemyLoc = FVector::ZeroVector;
-	
-	if (_enemyTarget.IsValid())
-		enemyLoc = _enemyTarget.Get()->GetActorLocation();
-
-	FRotator destRot = UKismetMathLibrary::FindLookAtRotation(ownedLoc, enemyLoc);
-
-	owned->SetActorRotation(destRot);
-
-	owned->Attack();
+	UCameraShakeBase* cam =  PlayerCameraManager->StartCameraShake(_CS_primaryAttack, 1.f);
 
 }
 
 void AUnitPlayerController::SetTargetEmpty()
 {
-	if (_enemyTarget.IsValid())
+	if (_owned->GetEnemyTarget().IsValid())
 	{
-		_enemyTarget.Reset();
-
+		_owned->GetEnemyTarget().Reset();
 		_owned->SetFSMState(AUnitCharacter::IDLE);
 
 	}

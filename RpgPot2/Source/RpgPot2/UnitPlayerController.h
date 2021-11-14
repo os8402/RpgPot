@@ -28,18 +28,16 @@ public:
 	void SetMoveDest(const FVector DestLocation);
 
 	void CheckActorOther(class AUnitCharacter* other);
-	void ChaseEnemy();
-	void AttackEnemy(AUnitCharacter* owned);
+//	void ChaseEnemy();
+	//void AttackEnemy(AUnitCharacter* owned);
+
+	void PrimaryAttack_CameraShake();
 
 	//타겟이 사라질 경우
 	void SetTargetEmpty();
 
 	void OnMovePressed();
 	void OnMoveReleased();
-
-
-public:
-	TWeakObjectPtr<AUnitCharacter>& GetTarget() { return _enemyTarget; }
 
 
 private:
@@ -56,9 +54,6 @@ private:
 	UPROPERTY(VisibleAnywhere)
 	TWeakObjectPtr<class AUnitCharacter> _currentSeeTarget;
 
-	//공격 진행을 위한 타겟. 
-	UPROPERTY(VisibleAnywhere)
-	TWeakObjectPtr<class AUnitCharacter> _enemyTarget;
 
 	FDelegateHandle targetHandle;
 
@@ -68,6 +63,10 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category="UI")
 	TSubclassOf<class UInGameMainWidget> _ingameMainClass;
 	class UInGameMainWidget* _ingameMainUI;
+
+	UPROPERTY()
+	TSubclassOf<class UMatineeCameraShake> _CS_primaryAttack;
+
 
 
 
