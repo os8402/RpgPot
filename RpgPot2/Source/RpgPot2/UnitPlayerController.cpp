@@ -5,7 +5,8 @@
 #include <Blueprint/AIBlueprintHelperLibrary.h>
 #include <Components/WidgetComponent.h>
 #include <Blueprint/UserWidget.h>
-#include "UnitCharacter.h"
+#include "UnitPlayer.h"
+#include "UnitMonster.h"
 #include "UnitAnim.h"
 #include <Kismet/KismetMathLibrary.h>
 #include "InGameMainWidget.h"
@@ -41,7 +42,7 @@ AUnitPlayerController::AUnitPlayerController()
 		_ingameMainClass = WB_Ingame.Class;
 	}
 
-	static ConstructorHelpers::FClassFinder<UMatineeCameraShake> CS_PRIMARY_ATK(TEXT("Blueprint'/Game/Blueprints/BP_CS_PrimaryAttack.BP_CS_PrimaryAttack_C'"));
+	static ConstructorHelpers::FClassFinder<UMatineeCameraShake> CS_PRIMARY_ATK(TEXT("Blueprint'/Game/Blueprints/Cameras/BP_CS_PrimaryAttack.BP_CS_PrimaryAttack_C'"));
 	if (CS_PRIMARY_ATK.Succeeded())
 	{
 		_CS_primaryAttack = CS_PRIMARY_ATK.Class;
@@ -55,7 +56,7 @@ void AUnitPlayerController::BeginPlay()
 	_ingameMainUI = CreateWidget<UInGameMainWidget>(this, _ingameMainClass);
 	_ingameMainUI->AddToViewport();
 
-	auto unitCharacter = Cast<AUnitCharacter>(GetPawn());
+	auto unitCharacter = Cast<AUnitPlayer>(GetPawn());
 	if (unitCharacter)
 	{
 		//조종하는 캐릭터만 연두색
@@ -65,7 +66,7 @@ void AUnitPlayerController::BeginPlay()
 		unitCharacter->GetCharacterMovement()->MaxWalkSpeed = 1000.f;
 	}
 
-	_owned = Cast<AUnitCharacter>(GetCharacter());
+	_owned = Cast<AUnitPlayer>(GetCharacter());
 
 	if (_ingameMainUI)
 		_ingameMainUI->BindHp(_owned->GetStatComp());
@@ -76,13 +77,13 @@ void AUnitPlayerController::PlayerTick(float DeltaTime)
 {
 	Super::PlayerTick(DeltaTime);
 
-	_owned = Cast<AUnitCharacter>(GetCharacter());
+	_owned = Cast<AUnitPlayer>(GetCharacter());
 
 	if (_owned)
 	{
-		AUnitCharacter::GameStates state = _owned->GetFSMState();
+		AUnitPlayer::GameStates state = _owned->GetFSMState();
 
-		if (state == AUnitCharacter::DEAD)
+		if (state == AUnitPlayer::DEAD)
 			return;
 
 		if (_bClickMouse)
@@ -118,14 +119,14 @@ void AUnitPlayerController::MoveToMouseCursor()
 	if (Hit.bBlockingHit == false)
 		return;
 
-	auto hit = Cast<AUnitCharacter>(Hit.Actor);
+	auto hit = Cast<AUnitMonster>(Hit.Actor);
 
 
-	AUnitCharacter::GameStates state = _owned->GetFSMState();
+	AUnitPlayer::GameStates state = _owned->GetFSMState();
 
 	switch (state)
 	{
-	case AUnitCharacter::IDLE:
+	case AUnitPlayer::IDLE:
 
 		//적을 타겟팅 하고 있었으면
 		//공격 대상으로 변경 
@@ -140,14 +141,14 @@ void AUnitPlayerController::MoveToMouseCursor()
 				targetHandle = _owned->GetEnemyTarget().Get()->GetStatComp()->GetOnUnitDied()
 					.AddUObject(this, &AUnitPlayerController::SetTargetEmpty);
 
-				_owned->SetFSMState(AUnitCharacter::ATTACK);
+				_owned->SetFSMState(AUnitPlayer::ATTACK);
 				_bAttacking = true; 
 				return;
 			}
 		}
 	
 		break;
-	case AUnitCharacter::ATTACK:
+	case AUnitPlayer::ATTACK:
 
 		//TODO : 공격 취소 과정
 		
@@ -162,7 +163,7 @@ void AUnitPlayerController::MoveToMouseCursor()
 		}
 		
 		//취소 진행
-		_owned->SetFSMState(AUnitCharacter::IDLE);
+		_owned->SetFSMState(AUnitPlayer::IDLE);
 
 
 		if (_owned->GetEnemyTarget().IsValid())
@@ -216,7 +217,7 @@ void AUnitPlayerController::CheckActorOther(AUnitCharacter* other)
 	{
 
 		//상대방이 죽었으면 탐지 x
-		if (other->GetFSMState() == AUnitCharacter::DEAD)
+		if (other->GetFSMState() == AUnitPlayer::DEAD)
 			return;
 
 		SetMouseCursorWidget(EMouseCursor::Default, _cursorAttack->GetUserWidgetObject());
@@ -285,7 +286,7 @@ void AUnitPlayerController::SetTargetEmpty()
 	if (_owned->GetEnemyTarget().IsValid())
 	{
 		_owned->GetEnemyTarget().Reset();
-		_owned->SetFSMState(AUnitCharacter::IDLE);
+		_owned->SetFSMState(AUnitPlayer::IDLE);
 
 	}
 }

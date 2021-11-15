@@ -2,11 +2,11 @@
 
 
 #include "UnitGameModeBase.h"
-#include "UnitCharacter.h"
+#include "UnitPlayer.h"
 
 AUnitGameModeBase::AUnitGameModeBase()
 {
-	static ConstructorHelpers::FClassFinder<AUnitCharacter> AC(TEXT("Blueprint'/Game/Blueprints/BP_UnitCharacter.BP_UnitCharacter_C'"));
+	static ConstructorHelpers::FClassFinder<AUnitPlayer> AC(TEXT("Blueprint'/Game/Blueprints/Characters/BP_UnitPlayer.BP_UnitPlayer_C'"));
 	if (AC.Succeeded())
 	{
 		DefaultPawnClass = AC.Class;

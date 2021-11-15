@@ -43,13 +43,13 @@ private:
 	class UDataTable* _statData; 
 
 	UPROPERTY(VisibleAnyWhere, Category = Pawn)
-	TSubclassOf<class AUnitCharacter> _spawnEnemy;  
+	TSubclassOf<class AUnitMonster> _spawnEnemy;  
 		
 	int32 _totalEnemyCount = 0;
 	
 
 	UPROPERTY(VisibleAnyWhere, Category = Pawn)
-	TMap<int32,  class AUnitCharacter*> _enemyList; 
+	TMap<int32,  class AUnitMonster*> _enemyList;
 
 	FTimerHandle _respawnTimer; 
 };

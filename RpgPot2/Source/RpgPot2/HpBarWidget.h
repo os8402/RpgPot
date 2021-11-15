@@ -16,7 +16,7 @@ class RPGPOT2_API UHpBarWidget : public UUserWidget
 
 public:
 
-	void BindHp(class UStatDataComponent* statComp);
+	void BindHp(FText name , class UStatDataComponent* statComp);
 	void UpdateHp();
 
 private:
@@ -25,5 +25,9 @@ private:
 
 	UPROPERTY(meta=(BindWidget))
 	class UProgressBar* _PB_HpBar;
+
+
+	UPROPERTY(meta = (BindWidget))
+	class UTextBlock* _TB_NameLv;
 	
 };

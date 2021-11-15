@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+Ôªø// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "UnitCharacter.h"
@@ -6,7 +6,6 @@
 #include <GameFramework/SpringArmComponent.h>
 #include <Components/CapsuleComponent.h>
 #include <GameFramework/CharacterMovementComponent.h>
-#include <Blueprint/AIBlueprintHelperLibrary.h>
 #include <Components/WidgetComponent.h>
 #include <Components/SceneCaptureComponent2D.h>
 #include "PaperSpriteComponent.h"
@@ -19,7 +18,7 @@
 #include "GMInstance.h"
 #include <kismet/GameplayStatics.h>
 #include "UnitAIController.h"
-#include <BehaviorTree/BlackboardComponent.h>
+
 
 
 // Sets default values
@@ -120,7 +119,7 @@ void AUnitCharacter::PostInitializeComponents()
 		{
 			animIns->OnMontageEnded.AddDynamic(this, &AUnitCharacter::OnAttackMontageEnded);
 			
-			//æ∆øÙ∂Û¿Œ ∏ﬁΩ√¥¬ ∞¯∞›∆«¡§ «ÿ¡¶
+			//ÏïÑÏõÉÎùºÏù∏ Î©îÏãúÎäî Í≥µÍ≤©ÌåêÏ†ï Ìï¥Ï†ú
 			if(_outLineAnimIns != animIns)
 				animIns->GetOnAttackHit().AddUObject(this, &AUnitCharacter::AttackCheck);
 			//bind
@@ -135,10 +134,18 @@ void AUnitCharacter::PostInitializeComponents()
 	_hpBar->SetVisibility(false);
 
 	auto hpBarWidget = Cast<UHpBarWidget>(_hpBar->GetUserWidgetObject());
-	if (hpBarWidget)
-		hpBarWidget->BindHp(_statComp);
 
-	//√≥¿Ωø£ ª°∞≠¿∏∑Œ ∞Ì¡§
+	if (hpBarWidget)
+	{
+		FString chrName = TEXT("ÏïÖÏùò Î¨¥Î¶¨");
+		
+		FString barInfoStr = FString::Printf(TEXT("%s LV %d"), *chrName, 1);
+
+		hpBarWidget->BindHp(FText::FromString(barInfoStr) , _statComp);
+	}
+	
+
+	//Ï≤òÏùåÏóî Îπ®Í∞ïÏúºÎ°ú Í≥†Ï†ï
 	ChangeMinimapColor(FLinearColor(1.f, 0.f, 0.f, 1.f));
 
 }
@@ -148,28 +155,10 @@ void AUnitCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	SearchActorInfo();
-
-	FSMUpdate();
+	//FSMUpdate();
 
 }
 
-void AUnitCharacter::SearchActorInfo()
-{
-	auto PC = Cast<AUnitPlayerController>(GetController());
-
-	if (PC)
-	{
-		FHitResult HitResult;
-		PC->GetHitResultUnderCursor(ECC_Pawn, true, HitResult);
-
-		if (HitResult.bBlockingHit)
-		{
-			auto Obj = Cast<AUnitCharacter>(HitResult.Actor);
-			PC->CheckActorOther(Obj);
-		}
-	}
-}
 
 
 void AUnitCharacter::AttackEnemy()
@@ -200,10 +189,6 @@ void AUnitCharacter::AttackEnemy()
 		animIns->PlayAttackMontage();
 	}
 
-
-	_attackIndex = (_attackIndex + 1) % 3;
-
-	
 }
 
 void AUnitCharacter::AttackCheck()
@@ -223,32 +208,14 @@ void AUnitCharacter::AttackCheck()
 		int attack = _statComp->GetAttack();
 		int dmg = FMath::RandRange(attack, attack * 2);
 		
-
 		_enemyTarget->TakeDamage(dmg , dmgEvent, GetController(), this);
 
-		//«√∑π¿ÃæÓ
-		auto controller = Cast<AUnitPlayerController>(GetController());
-
-		if (controller == nullptr)
-			return;
-
-		controller->PrimaryAttack_CameraShake();
 	}
 
 }
 
 float AUnitCharacter::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
-
-	//AI
-	auto aiController = Cast<AUnitAIController>(GetController());
-
-	if (aiController)
-	{
-		aiController->GetBlackboardComponent()->SetValueAsObject(FName(TEXT("Target")), DamageCauser);
-		aiController->GetBlackboardComponent()->SetValueAsVector(FName(TEXT("PatrolPos")), GetActorLocation());
-	}
-		
 
 	_statComp->OnAttacked(Damage);
 
@@ -295,35 +262,13 @@ void AUnitCharacter::ChangeMinimapColor(FLinearColor color)
 
 void AUnitCharacter::DeadCharacter()
 {
-	GetWorld()->GetTimerManager().ClearTimer(_hpBarTimerHandle);
-
 	_hpBar->SetVisibility(false);
 	_outLineMesh->SetVisibility(false);
 
-	auto playerController = Cast<AUnitPlayerController>(GetController());
-	if (playerController)
-	{
-		UAIBlueprintHelperLibrary::SimpleMoveToLocation(playerController, GetActorLocation());
-	}
+	GetWorld()->GetTimerManager().ClearTimer(_hpBarTimerHandle);
 
 
-	//AI
-	auto aiController = Cast<AUnitAIController>(GetController());
-
-	if (aiController)
-	{
-		aiController->GetBlackboardComponent()->SetValueAsObject(FName(TEXT("Target")), nullptr);
-		aiController->GetBlackboardComponent()->SetValueAsVector(FName(TEXT("PatrolPos")), GetActorLocation());
-
-		GetWorld()->GetTimerManager().SetTimer(_deadHandle, FTimerDelegate::CreateLambda([&]()
-			{
-				auto gmInstance = Cast<UGMInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
-				gmInstance->DestroyEnemy(_index);
-
-			}), 2.f, false);
-	}
-
-	//TODO : ∏∂¿ª ∫Œ»∞ or ∞‘¿” ≥°≥ª±‚ 
+	//TODO : ÎßàÏùÑ Î∂ÄÌôú or Í≤åÏûÑ ÎÅùÎÇ¥Í∏∞ 
 }
 
 void AUnitCharacter::OnAttackMontageEnded(UAnimMontage* montage, bool bInteruppted)
@@ -333,47 +278,7 @@ void AUnitCharacter::OnAttackMontageEnded(UAnimMontage* montage, bool bInteruppt
 }
 
 
-void AUnitCharacter::FSMUpdate()
-{
-	switch (_gameState)
-	{
-	case AUnitCharacter::IDLE:
-
-			IdleUpdate();
-		
-		break;
-
-	case AUnitCharacter::ATTACK:
-
-			AttackUpdate();
-	
-		break;
-
-	case AUnitCharacter::DEAD:
-			DeadUpdate();
-		
-		break;
-
-	default:
-		break;
-	}
-}
-
-
-void AUnitCharacter::IdleUpdate()
-{
-
-
-}
-
-void AUnitCharacter::AttackUpdate()
-{
-
-}
-void AUnitCharacter::DeadUpdate()
-{
-	
-}
+//
 
 
 void AUnitCharacter::SetFSMState(GameStates newState)
@@ -392,12 +297,55 @@ void AUnitCharacter::SetFSMState(GameStates newState)
 		break;
 	case AUnitCharacter::DEAD:
 
+	
 		DeadCharacter();
 		break;
 	default:
-		UE_LOG(LogTemp, Error, TEXT("¡∏¿Á«œ¡ˆæ ¿∫ FSM"), newState);
+		UE_LOG(LogTemp, Error, TEXT("Ï°¥Ïû¨ÌïòÏßÄÏïäÏùÄ FSM"), newState);
 		break;
 	}
 
 	
 }
+
+//void AUnitCharacter::FSMUpdate()
+////{
+////	switch (_gameState)
+////	{
+////	case AUnitCharacter::IDLE:
+////
+////			IdleUpdate();
+////		
+////		break;
+////
+////	case AUnitCharacter::ATTACK:
+////
+////			AttackUpdate();
+////	
+////		break;
+////
+////	case AUnitCharacter::DEAD:
+////			DeadUpdate();
+////		
+////		break;
+////
+////	default:
+////		break;
+////	}
+////}
+//
+//
+//void AUnitCharacter::IdleUpdate()
+//{
+//
+//
+//}
+//
+//void AUnitCharacter::AttackUpdate()
+//{
+//
+//}
+//void AUnitCharacter::DeadUpdate()
+//{
+//	
+//}

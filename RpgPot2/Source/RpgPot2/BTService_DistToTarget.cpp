@@ -4,7 +4,8 @@
 #include "BTService_DistToTarget.h"
 #include <BehaviorTree/BlackboardComponent.h>
 #include "UnitAIController.h"
-#include "UnitCharacter.h"
+#include "UnitMonster.h"
+#include "UnitPlayer.h"
 
 UBTService_DistToTarget::UBTService_DistToTarget()
 {
@@ -17,12 +18,12 @@ void UBTService_DistToTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint8*
 {
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 
-	auto owned = Cast<AUnitCharacter>(OwnerComp.GetAIOwner()->GetPawn());
+	auto owned = Cast<AUnitMonster>(OwnerComp.GetAIOwner()->GetPawn());
 
 	if (owned == nullptr || owned->GetFSMState() == AUnitCharacter::DEAD)
 		return;
 
-	auto target = Cast<AUnitCharacter>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(FName(TEXT("Target"))));
+	auto target = Cast<AUnitPlayer>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(FName(TEXT("Target"))));
 
 	if (target == nullptr)
 		return;

@@ -4,7 +4,8 @@
 #include "BTService_SearchTarget.h"
 #include <BehaviorTree/BlackboardComponent.h>
 #include "UnitAIController.h"
-#include "UnitCharacter.h"
+#include "UnitPlayer.h"
+#include "UnitMonster.h"
 #include <DrawDebugHelpers.h>
 #include "StatDataComponent.h"
 
@@ -18,9 +19,9 @@ void UBTService_SearchTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint8*
 {
 	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 
-	auto owned = Cast<AUnitCharacter>(OwnerComp.GetAIOwner()->GetPawn());
+	auto owned = Cast<AUnitMonster>(OwnerComp.GetAIOwner()->GetPawn());
 
-	if (owned == nullptr || owned->GetFSMState() == AUnitCharacter::DEAD)
+	if (owned == nullptr || owned->GetFSMState() == AUnitMonster::DEAD)
 		return;
 
 
@@ -46,24 +47,17 @@ void UBTService_SearchTarget::TickNode(UBehaviorTreeComponent& OwnerComp, uint8*
 	{
 		for (auto& overlap : overlapResult)
 		{
-			AUnitCharacter* myCharacter = Cast<AUnitCharacter>(overlap.GetActor());
-			if (myCharacter && myCharacter->GetController()->IsPlayerController())
+			AUnitPlayer* targetPlayer = Cast<AUnitPlayer>(overlap.GetActor());
+			if (targetPlayer)
 			{
-
-				if (myCharacter->GetFSMState() == AUnitCharacter::DEAD)
+				if (targetPlayer->GetFSMState() == AUnitPlayer::DEAD)
 					return;
 
-				OwnerComp.GetBlackboardComponent()->SetValueAsObject(FName(TEXT("Target")), myCharacter);
-				owned->SetEnemyTarget(myCharacter);
-
-				//Á×¾úÀ¸¸é Å¸°Ù ÇØÁ¦
-				myCharacter->GetStatComp()->GetOnUnitDied().AddLambda([&]()
-					{	
-						if (owned == nullptr)
-							return;
-						OwnerComp.GetBlackboardComponent()->SetValueAsObject(FName(TEXT("Target")), nullptr);
-					});
-				
+				OwnerComp.GetBlackboardComponent()->SetValueAsObject(FName(TEXT("Target")), targetPlayer);
+				owned->SetEnemyTarget(targetPlayer);
+	
+				owned->GetDieHandle() = targetPlayer->GetStatComp()->GetOnUnitDied().AddUObject(owned , &AUnitMonster::SetTargetEmpty);
+					
 				DrawDebugSphere(world, center, seachRadius, 16, FColor::Green, false, .2f);
 				
 				return;

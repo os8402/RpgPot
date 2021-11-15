@@ -4,7 +4,7 @@
 #include "BTDecorator_CanAttack.h"
 #include <BehaviorTree/BlackboardComponent.h>
 #include "UnitAIController.h"
-#include "UnitCharacter.h"
+#include "UnitPlayer.h"
 #include <DrawDebugHelpers.h>
 
 
@@ -23,7 +23,7 @@ bool UBTDecorator_CanAttack::CalculateRawConditionValue(UBehaviorTreeComponent& 
 	if (currentPawn == nullptr)
 		return false;
 
-	auto target = Cast<AUnitCharacter>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(FName(TEXT("Target"))));
+	auto target = Cast<AUnitPlayer>(OwnerComp.GetBlackboardComponent()->GetValueAsObject(FName(TEXT("Target"))));
 	if (target == nullptr)
 		return false;
 

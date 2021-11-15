@@ -60,7 +60,7 @@ private:
 	FDelegateHandle targetHandle;
 
 	UPROPERTY(VisibleAnywhere)
-	class AUnitCharacter* _owned; 
+	class AUnitPlayer* _owned; 
 
 	UPROPERTY(EditDefaultsOnly, Category="UI")
 	TSubclassOf<class UInGameMainWidget> _ingameMainClass;

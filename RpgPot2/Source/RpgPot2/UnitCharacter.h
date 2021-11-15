@@ -35,17 +35,14 @@ public:
 
 public:
 
-	//idle
-	void SearchActorInfo();
-
 	void AttackEnemy();
-	void AttackCheck();
+	virtual void AttackCheck();
 
 	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
 	void VisibleHpBar();
 	void ChangeMinimapColor(FLinearColor color);
-	void DeadCharacter();
+	virtual void DeadCharacter();
 
 
 	UFUNCTION()
@@ -55,6 +52,10 @@ public:
 
 	void SetIndex(int32 index) { _index = index; }
 	int32 GetIndex() { return _index; };
+
+	//캐릭터 고유 인덱스
+	void SetCharacterIndex(int32 index) { _chrIndex = index; }
+	int32 GetCharacterIndex() { return _chrIndex; }
 
 	void SetFSMState(GameStates newState);
 	GameStates GetFSMState() { return _gameState; }
@@ -77,19 +78,21 @@ public:
 private:
 
 	//FSM 
-	void FSMUpdate();
-
-	
-	void IdleUpdate();
-	void AttackUpdate();
-	void DeadUpdate();
+	//void FSMUpdate();	
+	//void IdleUpdate();
+	//void AttackUpdate();
+	//void DeadUpdate();
 
 
 private:
 
+	//서버 관련 접속 
 	int32 _index = 0;
 
-private:
+	//캐릭터별 고유 인덱스
+	int32 _chrIndex = 0;
+
+protected:
 
 	//기본 카메라 + 메쉬
 
@@ -113,7 +116,7 @@ private:
 	class UMaterial* _outLineMat;
 
 
-private: 
+protected: 
 
 	//공격 진행을 위한 타겟. 
 	UPROPERTY(VisibleAnywhere)
@@ -121,16 +124,13 @@ private:
 
 	bool _bAttacking = false;
 
-	UPROPERTY()
-	int32 _attackIndex = 0; 
-
 	//죽음 처리
-private:
+protected:
 	//일정시간 지나면 월드에서 제거. 
 	FTimerHandle _deadHandle;
 
 
-private:
+protected:
 
 	//UI
 	UPROPERTY(VisibleAnyWhere, Category = "UI")
@@ -141,7 +141,7 @@ private:
 
 	FTimerHandle _hpBarTimerHandle;
 
-private:
+protected:
 
 	//스탯
 
@@ -149,7 +149,7 @@ private:
 	class UStatDataComponent* _statComp;
 
 	//미니맵
-private:
+protected:
 
 	UPROPERTY(VisibleAnywhere)
 	class USpringArmComponent* _minimapSpring;

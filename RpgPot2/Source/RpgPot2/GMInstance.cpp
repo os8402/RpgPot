@@ -3,6 +3,7 @@
 
 #include "GMInstance.h"
 #include "UnitCharacter.h"
+#include "UnitMonster.h"
 
 UGMInstance::UGMInstance()
 {
@@ -11,7 +12,7 @@ UGMInstance::UGMInstance()
 	if (StatData.Succeeded())
 		_statData = StatData.Object;
 
-	static ConstructorHelpers::FClassFinder<AUnitCharacter> EM(TEXT("Blueprint'/Game/Blueprints/BP_UnitCharacter.BP_UnitCharacter_C'"));
+	static ConstructorHelpers::FClassFinder<AUnitMonster> EM(TEXT("Blueprint'/Game/Blueprints/Characters/BP_UnitMonster.BP_UnitMonster_C'"));
 
 	if (EM.Succeeded())
 		_spawnEnemy = EM.Class;
@@ -37,7 +38,7 @@ void UGMInstance::RespawnEnemy()
 		FVector spawnLoc = FVector(x, y, 120.f);
 		FRotator spawnRot;
 		
-		auto respawnEnemy = Cast<AUnitCharacter>(
+		auto respawnEnemy = Cast<AUnitMonster>(
 			GetWorld()->SpawnActor<AActor>(_spawnEnemy, spawnLoc, spawnRot, spawnParams));
 
 		if (respawnEnemy == nullptr)

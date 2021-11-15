@@ -35,14 +35,11 @@ public:
 
 	void SetDead() { StopAllMontages(.1f); _bDead = true; }
 
-	void JumpToSection(int32 sectionIndex);
-	FName GetAttackOnMontageName(int32 sectionIndex);
 
 private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pawn", Meta = (AllowPrivateAccess=true));
 	float _speed;
-
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Pawn", Meta = (AllowPrivateAccess = true));
 	bool _bDead;
