@@ -4,10 +4,13 @@
 #include "UnitPlayer.h"
 #include "UnitPlayerController.h"
 #include <Blueprint/AIBlueprintHelperLibrary.h>
+#include "GMInstance.h"
+#include <kismet/GameplayStatics.h>
 
 
 AUnitPlayer::AUnitPlayer()
 {
+
 
 }
 
@@ -62,5 +65,12 @@ void AUnitPlayer::DeadCharacter()
 	{
 		UAIBlueprintHelperLibrary::SimpleMoveToLocation(playerController, GetActorLocation());
 	}
+	
+	//playerController->OnUnPossess();
+	
+	auto gmInstance = Cast<UGMInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
+	gmInstance->RespawnPlayer(playerController);
+
+	gmInstance->DestroyPlayer(GetIndex());
 
 }

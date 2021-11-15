@@ -18,6 +18,7 @@
 #include "GMInstance.h"
 #include <kismet/GameplayStatics.h>
 #include "UnitAIController.h"
+#include "DebugTextWidget.h"
 
 
 
@@ -66,7 +67,7 @@ AUnitCharacter::AUnitCharacter()
 	_hpBar->SetupAttachment(GetMesh());
 	_hpBar->SetWidgetSpace(EWidgetSpace::Screen);
 	_hpBar->SetRelativeLocation(FVector(0.f, 0.f, 300.f));
-
+	
 	static ConstructorHelpers::FClassFinder<UUserWidget> WBP_HpBar(TEXT("WidgetBlueprint'/Game/Blueprints/Widget/WBP_HpBar.WBP_HpBar_C'"));
 
 	if (WBP_HpBar.Succeeded())
@@ -74,6 +75,20 @@ AUnitCharacter::AUnitCharacter()
 		_hpBar->SetWidgetClass(WBP_HpBar.Class);
 		_hpBar->SetDrawSize(FVector2D(300.f, 25.f));
 	}
+
+	_debugText = CreateDefaultSubobject<UWidgetComponent>(TEXT("DEBUG_TEXT"));
+	_debugText->SetupAttachment(GetMesh());
+	_debugText->SetWidgetSpace(EWidgetSpace::Screen);
+	_debugText->SetRelativeLocation(FVector(0.f, 0.f, -300.f));
+
+	static ConstructorHelpers::FClassFinder<UUserWidget> WBP_Dbg(TEXT("WidgetBlueprint'/Game/Blueprints/Widget/WBP_DebugText.WBP_DebugText_C'"));
+
+	if (WBP_Dbg.Succeeded())
+	{
+		_debugText->SetWidgetClass(WBP_Dbg.Class);
+		_debugText->SetDrawSize(FVector2D(200.f, 80.f));
+	}
+
 
 	_statComp = CreateDefaultSubobject<UStatDataComponent>(TEXT("STAT"));
 
@@ -143,7 +158,9 @@ void AUnitCharacter::PostInitializeComponents()
 
 		hpBarWidget->BindHp(FText::FromString(barInfoStr) , _statComp);
 	}
-	
+
+	//디버그용 위젯
+	_debugText->InitWidget();
 
 	//처음엔 빨강으로 고정
 	ChangeMinimapColor(FLinearColor(1.f, 0.f, 0.f, 1.f));
@@ -269,6 +286,19 @@ void AUnitCharacter::DeadCharacter()
 
 
 	//TODO : 마을 부활 or 게임 끝내기 
+}
+
+void AUnitCharacter::SetDebugText()
+{
+
+	auto debugWidget = Cast<UDebugTextWidget>(_debugText->GetUserWidgetObject());
+
+	if (debugWidget)
+	{
+		FString idxStr = FString::Printf(TEXT("%d"), _index);
+		debugWidget->BindText(idxStr);
+	}
+
 }
 
 void AUnitCharacter::OnAttackMontageEnded(UAnimMontage* montage, bool bInteruppted)

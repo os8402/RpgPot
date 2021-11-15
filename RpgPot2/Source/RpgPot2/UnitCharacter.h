@@ -44,6 +44,8 @@ public:
 	void ChangeMinimapColor(FLinearColor color);
 	virtual void DeadCharacter();
 
+	void SetDebugText();
+
 
 	UFUNCTION()
 	void OnAttackMontageEnded(UAnimMontage* montage, bool bInteruppted);
@@ -138,6 +140,9 @@ protected:
 
 	UPROPERTY(VisibleAnyWhere, Category = "UI")
 	class UWidgetComponent* _hpBar; 
+
+	UPROPERTY(VisibleAnyWhere, Category = "UI")
+	class UWidgetComponent* _debugText;
 
 	FTimerHandle _hpBarTimerHandle;
 

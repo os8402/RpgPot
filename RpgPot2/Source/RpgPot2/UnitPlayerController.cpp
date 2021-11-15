@@ -9,12 +9,14 @@
 #include "UnitMonster.h"
 #include "UnitAnim.h"
 #include <Kismet/KismetMathLibrary.h>
+#include <kismet/GameplayStatics.h>
 #include "InGameMainWidget.h"
 #include "StatDataComponent.h"
 #include <Camera/CameraShakeBase.h>
 #include <GameFramework/CharacterMovementComponent.h>
 #include <Components/SceneCaptureComponent2D.h>
 #include "InGameMainWidget.h"
+#include "GMInstance.h"
 
 AUnitPlayerController::AUnitPlayerController()
 {
@@ -50,6 +52,28 @@ AUnitPlayerController::AUnitPlayerController()
 
 }
 
+void AUnitPlayerController::OnPossess(APawn* aPawn)
+{
+	Super::OnPossess(aPawn);
+
+	_owned = Cast<AUnitPlayer>(GetCharacter());
+
+	auto gmInstance = Cast<UGMInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
+
+	_owned->SetIndex(gmInstance->GenerateKey(gmInstance->GetKeyPlayerCount()));
+
+	gmInstance->AddKeyPlayerCount(_owned);
+
+	_owned->SetDebugText();
+
+	UE_LOG(LogTemp, Log, TEXT("Index : %d") , _owned->GetIndex());
+}
+
+void AUnitPlayerController::OnUnPossess()
+{
+	Super::OnUnPossess();
+}
+
 void AUnitPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -62,7 +86,7 @@ void AUnitPlayerController::BeginPlay()
 		//조종하는 캐릭터만 연두색
 		unitCharacter->GetMinimapCam()->CaptureSortPriority = -1;
 		unitCharacter->ChangeMinimapColor(FLinearColor(0.f, 1.f, 0.f, 1.f));
-		unitCharacter->GetStatComp()->SetHp(1000);
+		//unitCharacter->GetStatComp()->SetHp(1000);
 		unitCharacter->GetCharacterMovement()->MaxWalkSpeed = 1000.f;
 	}
 

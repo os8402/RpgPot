@@ -15,10 +15,12 @@ class RPGPOT2_API UDebugTextWidget : public UUserWidget
 	GENERATED_BODY()
 
 public:
-
+	void BindText(FString str);
 
 private:
 
+	UPROPERTY(meta = (BindWidget))
+	class UTextBlock* _TB_SpawnIndex;
 
 	
 };

@@ -17,9 +17,14 @@ class RPGPOT2_API AUnitPlayerController : public APlayerController
 public:
 
 	AUnitPlayerController();
+	virtual void OnPossess(APawn* aPawn) override;
+	virtual void OnUnPossess() override;
+
 	virtual void BeginPlay() override;
 	virtual void PlayerTick(float DeltaTime) override;
 	virtual void SetupInputComponent() override;
+
+	//virtual void SetPlayer(UPlayer* InPlayer);
 
 public:
 

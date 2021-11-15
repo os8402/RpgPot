@@ -2,8 +2,10 @@
 
 
 #include "DebugTextWidget.h"
+#include "Components/TextBlock.h"
 
-UDebugTextWidget::UDebugTextWidget()
+void UDebugTextWidget::BindText(FString str)
 {
+	_TB_SpawnIndex->SetText(FText::FromString(str));
 
 }
