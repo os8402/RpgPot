@@ -22,6 +22,7 @@
 
 
 
+
 // Sets default values
 AUnitCharacter::AUnitCharacter()
 {
@@ -40,6 +41,7 @@ AUnitCharacter::AUnitCharacter()
 	GetCharacterMovement()->bConstrainToPlane = true;
 	GetCharacterMovement()->bSnapToPlaneAtStart = true;
 
+	
 	_springArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SPRING ARM"));
 	_springArm->SetupAttachment(GetCapsuleComponent());
 	_springArm->SetUsingAbsoluteRotation(true);
@@ -56,18 +58,18 @@ AUnitCharacter::AUnitCharacter()
 	_outLineMesh->SetupAttachment(GetCapsuleComponent());
 	_outLineMesh->SetVisibility(false);
 
-	static ConstructorHelpers::FObjectFinder<UBlueprint> DT(TEXT("Blueprint'/Game/Blueprints/BP_FloatText.BP_FloatText'"));
+	static ConstructorHelpers::FClassFinder<AActor> DTC(TEXT("Blueprint'/Game/Blueprints/BP_FloatText.BP_FloatText_C'"));
 
-	if (DT.Object)
-	{
-		_dmgActor = Cast<UClass>(DT.Object->GeneratedClass);
-	}
-
+	if (DTC.Succeeded())
+		_dmgActor = DTC.Class;
+		 
 	_hpBar = CreateDefaultSubobject<UWidgetComponent>(TEXT("HP_BAR"));
 	_hpBar->SetupAttachment(GetMesh());
 	_hpBar->SetWidgetSpace(EWidgetSpace::Screen);
 	_hpBar->SetRelativeLocation(FVector(0.f, 0.f, 300.f));
 	
+	
+
 	static ConstructorHelpers::FClassFinder<UUserWidget> WBP_HpBar(TEXT("WidgetBlueprint'/Game/Blueprints/Widget/WBP_HpBar.WBP_HpBar_C'"));
 
 	if (WBP_HpBar.Succeeded())
@@ -79,14 +81,14 @@ AUnitCharacter::AUnitCharacter()
 	_debugText = CreateDefaultSubobject<UWidgetComponent>(TEXT("DEBUG_TEXT"));
 	_debugText->SetupAttachment(GetMesh());
 	_debugText->SetWidgetSpace(EWidgetSpace::Screen);
-	_debugText->SetRelativeLocation(FVector(0.f, 0.f, -300.f));
+	_debugText->SetRelativeLocation(FVector(0.f, 0.f, -250.f));
 
 	static ConstructorHelpers::FClassFinder<UUserWidget> WBP_Dbg(TEXT("WidgetBlueprint'/Game/Blueprints/Widget/WBP_DebugText.WBP_DebugText_C'"));
 
 	if (WBP_Dbg.Succeeded())
 	{
 		_debugText->SetWidgetClass(WBP_Dbg.Class);
-		_debugText->SetDrawSize(FVector2D(200.f, 80.f));
+		_debugText->SetDrawSize(FVector2D(100.f, 50.f));
 	}
 
 
@@ -172,8 +174,6 @@ void AUnitCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	//FSMUpdate();
-
 }
 
 
@@ -220,7 +220,6 @@ void AUnitCharacter::AttackCheck()
 		if (this->GetDistanceTo(_enemyTarget.Get()) > 300.f)
 			return;
 		
-	
 		FDamageEvent dmgEvent;
 		int attack = _statComp->GetAttack();
 		int dmg = FMath::RandRange(attack, attack * 2);
@@ -238,18 +237,20 @@ float AUnitCharacter::TakeDamage(float Damage, struct FDamageEvent const& Damage
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
-	FRotator rotator;
-	FVector  SpawnLocation = GetActorLocation();
-	SpawnLocation.Z += 200.f;
 
-	auto dmgActor = Cast<ADmgTextActor>(
-		GetWorld()->SpawnActor<AActor>(_dmgActor, SpawnLocation, rotator, SpawnParams));
+	FVector  spawnLocation = GetActorLocation();
+	//spawnLocation.Z += 200.f;
+	
+	FRotator spawnRotator = DamageCauser->GetActorRotation();
 
-	dmgActor->UpdateDamage(Damage);
+	_currentDmgActor = Cast<ADmgTextActor>(
+		GetWorld()->SpawnActor<AActor>(_dmgActor, spawnLocation, spawnRotator, SpawnParams));
+
+	//_currentDmgActor->UpdateDamage(Damage);
+
 
 	VisibleHpBar();
 
-	
 	return Damage;
 }
 
@@ -319,6 +320,10 @@ void AUnitCharacter::SetFSMState(GameStates newState)
 	switch (_gameState)
 	{
 	case AUnitCharacter::IDLE:
+
+		break;
+
+	case AUnitCharacter::MOVE:
 
 		break;
 

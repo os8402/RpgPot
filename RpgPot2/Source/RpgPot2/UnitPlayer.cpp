@@ -6,7 +6,8 @@
 #include <Blueprint/AIBlueprintHelperLibrary.h>
 #include "GMInstance.h"
 #include <kismet/GameplayStatics.h>
-
+#include "InGameMainWidget.h"
+#include "DmgTextActor.h"
 
 AUnitPlayer::AUnitPlayer()
 {
@@ -21,6 +22,17 @@ void AUnitPlayer::Tick(float DeltaTime)
 
 	SearchActorInfo();
 
+}
+
+float AUnitPlayer::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
+{
+	float dmg = Super::TakeDamage(Damage, DamageEvent, EventInstigator, DamageCauser);
+
+	FLinearColor color = FLinearColor::Red;
+
+	_currentDmgActor->UpdateDamage(dmg, color);
+
+	return dmg;
 }
 
 void AUnitPlayer::SearchActorInfo()
@@ -61,16 +73,7 @@ void AUnitPlayer::DeadCharacter()
 	Super::DeadCharacter();
 
 	auto playerController = Cast<AUnitPlayerController>(GetController());
-	if (playerController)
-	{
-		UAIBlueprintHelperLibrary::SimpleMoveToLocation(playerController, GetActorLocation());
-	}
-	
-	//playerController->OnUnPossess();
-	
-	auto gmInstance = Cast<UGMInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
-	gmInstance->RespawnPlayer(playerController);
+	playerController->OpenDeadPanel();
 
-	gmInstance->DestroyPlayer(GetIndex());
 
 }

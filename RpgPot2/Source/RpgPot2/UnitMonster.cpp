@@ -7,6 +7,8 @@
 #include "GMInstance.h"
 #include <kismet/GameplayStatics.h>
 #include "StatDataComponent.h"
+#include "DmgTextActor.h"
+
 
 AUnitMonster::AUnitMonster()
 {
@@ -17,14 +19,10 @@ AUnitMonster::AUnitMonster()
 float AUnitMonster::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
 	float dmg = Super::TakeDamage(Damage , DamageEvent , EventInstigator, DamageCauser);
-	//AI
-	auto aiController = Cast<AUnitAIController>(GetController());
 
-	if (aiController)
-	{
-		//aiController->GetBlackboardComponent()->SetValueAsObject(FName(TEXT("Target")), DamageCauser);
-		//aiController->GetBlackboardComponent()->SetValueAsVector(FName(TEXT("PatrolPos")), GetActorLocation());
-	}
+	FLinearColor color = FLinearColor::Red;
+
+	_currentDmgActor->UpdateDamage(dmg, color);
 
 	return dmg;
 }

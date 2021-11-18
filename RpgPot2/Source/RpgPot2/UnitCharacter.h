@@ -20,7 +20,7 @@ public:
 	AUnitCharacter();
 
 	//FSM 
-	enum  GameStates { IDLE, ATTACK, DEAD };
+	enum  GameStates { IDLE, MOVE,  ATTACK, DEAD };
 
 protected:
 	// Called when the game starts or when spawned
@@ -137,6 +137,9 @@ protected:
 	//UI
 	UPROPERTY(VisibleAnyWhere, Category = "UI")
 	TSubclassOf<class AActor> _dmgActor;
+
+	//플레이어 / 몬스터에 따라 색깔 다를 수 ? 있음 // 치명 힐 등 여부 도 있음  
+	class ADmgTextActor* _currentDmgActor;
 
 	UPROPERTY(VisibleAnyWhere, Category = "UI")
 	class UWidgetComponent* _hpBar; 

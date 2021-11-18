@@ -4,7 +4,7 @@
 #include "DmgTextWidget.h"
 #include <Components/TextBlock.h>
 
-void UDmgTextWidget::UpdateText(int32 dmg)
+void UDmgTextWidget::UpdateText(int32 dmg, FLinearColor color)
 {
 	FString conv = FString::FromInt(dmg);
 	_TB_DmgText->SetText(FText::FromString(conv));

@@ -16,7 +16,7 @@ class RPGPOT2_API UDmgTextWidget : public UUserWidget
 
 public:
 
-	void UpdateText(int32 dmg);
+	void UpdateText(int32 dmg, FLinearColor color);
 	
 private:
 

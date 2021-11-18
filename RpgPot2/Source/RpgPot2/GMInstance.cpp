@@ -45,7 +45,7 @@ void UGMInstance::RespawnEnemy()
 		int32 x = FMath::RandRange(-800, 800);
 		int32 y = FMath::RandRange(-800, 800);
 		FVector spawnLoc = FVector(x, y, 120.f);
-		FRotator spawnRot;
+		FRotator spawnRot = FRotator(FQuat::Identity);
 		
 		auto respawnEnemy = Cast<AUnitMonster>(
 			GetWorld()->SpawnActor<AActor>(_spawnEnemy, spawnLoc, spawnRot, spawnParams));
@@ -74,15 +74,13 @@ void UGMInstance::DestroyEnemy(int32 index)
 
 void UGMInstance::RespawnPlayer(class AUnitPlayerController* controller)
 {
-
 	_totalPlayerCount++;
-
 	FActorSpawnParameters spawnParams;
 
 	int32 x = FMath::RandRange(-800, 800);
 	int32 y = FMath::RandRange(-800, 800);
 	FVector spawnLoc = FVector(x, y, 120.f);
-	FRotator spawnRot;
+	FRotator spawnRot = FRotator(FQuat::Identity);
 
 	auto respawnPlayer = Cast<AUnitPlayer>(
 		GetWorld()->SpawnActor<AActor>(_spawnPlayer, spawnLoc, spawnRot, spawnParams));

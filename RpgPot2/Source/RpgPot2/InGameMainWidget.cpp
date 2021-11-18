@@ -4,6 +4,8 @@
 #include "InGameMainWidget.h"
 #include "StatDataComponent.h"
 #include "Components/ProgressBar.h"
+#include "DeadPanelWidget.h"
+
 
 void UInGameMainWidget::BindHp(class UStatDataComponent* statComp)
 {

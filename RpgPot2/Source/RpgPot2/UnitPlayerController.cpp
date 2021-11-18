@@ -2,7 +2,6 @@
 
 
 #include "UnitPlayerController.h"
-#include <Blueprint/AIBlueprintHelperLibrary.h>
 #include <Components/WidgetComponent.h>
 #include <Blueprint/UserWidget.h>
 #include "UnitPlayer.h"
@@ -16,13 +15,15 @@
 #include <GameFramework/CharacterMovementComponent.h>
 #include <Components/SceneCaptureComponent2D.h>
 #include "InGameMainWidget.h"
+#include "DeadPanelWidget.h"
 #include "GMInstance.h"
+
+
 
 AUnitPlayerController::AUnitPlayerController()
 {
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Default;
-
 
 	_cursorBasic = CreateDefaultSubobject<UWidgetComponent>(TEXT("CURSOR_BASIC"));
 	static ConstructorHelpers::FClassFinder<UUserWidget> CB(TEXT("WidgetBlueprint'/Game/Blueprints/Widget/WBP_CursorBasic.WBP_CursorBasic_C'"));
@@ -44,11 +45,18 @@ AUnitPlayerController::AUnitPlayerController()
 		_ingameMainClass = WB_Ingame.Class;
 	}
 
+	static ConstructorHelpers::FClassFinder<UDeadPanelWidget> WB_Dead(TEXT("WidgetBlueprint'/Game/Blueprints/Widget/WBP_DeadPanel.WBP_DeadPanel_C'"));
+	if (WB_Dead.Succeeded())
+	{
+		_deadPanelClass = WB_Dead.Class;
+	}
+
 	static ConstructorHelpers::FClassFinder<UMatineeCameraShake> CS_PRIMARY_ATK(TEXT("Blueprint'/Game/Blueprints/Cameras/BP_CS_PrimaryAttack.BP_CS_PrimaryAttack_C'"));
 	if (CS_PRIMARY_ATK.Succeeded())
 	{
 		_CS_primaryAttack = CS_PRIMARY_ATK.Class;
 	}
+
 
 }
 
@@ -66,6 +74,8 @@ void AUnitPlayerController::OnPossess(APawn* aPawn)
 
 	_owned->SetDebugText();
 
+	InitPlayerUnit();
+
 	UE_LOG(LogTemp, Log, TEXT("Index : %d") , _owned->GetIndex());
 }
 
@@ -74,26 +84,27 @@ void AUnitPlayerController::OnUnPossess()
 	Super::OnUnPossess();
 }
 
+void AUnitPlayerController::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+
+}
+
 void AUnitPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
+
 	_ingameMainUI = CreateWidget<UInGameMainWidget>(this, _ingameMainClass);
 	_ingameMainUI->AddToViewport();
 
-	auto unitCharacter = Cast<AUnitPlayer>(GetPawn());
-	if (unitCharacter)
-	{
-		//조종하는 캐릭터만 연두색
-		unitCharacter->GetMinimapCam()->CaptureSortPriority = -1;
-		unitCharacter->ChangeMinimapColor(FLinearColor(0.f, 1.f, 0.f, 1.f));
-		//unitCharacter->GetStatComp()->SetHp(1000);
-		unitCharacter->GetCharacterMovement()->MaxWalkSpeed = 1000.f;
-	}
-
-	_owned = Cast<AUnitPlayer>(GetCharacter());
 
 	if (_ingameMainUI)
+	{
 		_ingameMainUI->BindHp(_owned->GetStatComp());
+		_ingameMainUI->UpdateHp();
+	}
+
 
 }
 
@@ -110,11 +121,14 @@ void AUnitPlayerController::PlayerTick(float DeltaTime)
 		if (state == AUnitPlayer::DEAD)
 			return;
 
-		if (_bClickMouse)
-			MoveToMouseCursor();
+		if (_bClickMouse)	
+			MoveToMouseCursor(DeltaTime);
+
+		if (_bMoving)
+			SetMoveDest(_destPos, DeltaTime);
 		
-		if(_bAttacking)
-			ChaseEnemy();
+		else if(_bAttacking)
+			ChaseEnemy(DeltaTime);
 	}
 
 }
@@ -125,14 +139,41 @@ void AUnitPlayerController::SetupInputComponent()
 
 	InputComponent->BindAction("Move", IE_Pressed, this, &AUnitPlayerController::OnMovePressed);
 	InputComponent->BindAction("Move", IE_Released, this, &AUnitPlayerController::OnMoveReleased);
+
 }
 
+void AUnitPlayerController::InitPlayerUnit()
+{
+
+	_bClickMouse = _bMoving = _bAttacking = false;
+
+	auto unitCharacter = Cast<AUnitPlayer>(GetPawn());
+
+	if (unitCharacter)
+	{
+		//조종하는 캐릭터만 연두색
+		unitCharacter->GetMinimapCam()->CaptureSortPriority = -1;
+		unitCharacter->ChangeMinimapColor(FLinearColor(0.f, 1.f, 0.f, 1.f));
+		unitCharacter->GetStatComp()->SetHp(3000);
+		unitCharacter->GetCharacterMovement()->MaxWalkSpeed = 1000.f;
+	}
 
 
-void AUnitPlayerController::MoveToMouseCursor()
+	if(_ingameMainUI)
+	{
+		_ingameMainUI->BindHp(_owned->GetStatComp());
+		_ingameMainUI->UpdateHp();
+	}
+
+		
+
+}
+
+void AUnitPlayerController::MoveToMouseCursor(float deltaTime)
 {
 	_bClickMouse = true;
 	_bAttacking = false;
+	_bMoving = false;
 
 	if (_owned == nullptr)
 		return;
@@ -211,11 +252,13 @@ void AUnitPlayerController::MoveToMouseCursor()
 	}
 
 	//전부 걸러졌으면 그땐 진짜 이동임. 
-	SetMoveDest(Hit.ImpactPoint);
+	_destPos = Hit.ImpactPoint;
+	_bMoving = true; 
+	
 
 }
 
-void AUnitPlayerController::SetMoveDest(const FVector DestLocation)
+void AUnitPlayerController::SetMoveDest(const FVector DestLocation, float deltaTime)
 {
 
 	if (_owned == nullptr)
@@ -225,9 +268,31 @@ void AUnitPlayerController::SetMoveDest(const FVector DestLocation)
 
 	if (dist > 100.f)
 	{
-		UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, DestLocation);
-	}
+		//UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, DestLocation);
 
+		UCharacterMovementComponent* movementComp = _owned->GetCharacterMovement();
+		float speed = movementComp->MaxWalkSpeed;
+	
+		FVector Dir = (DestLocation - _owned->GetActorLocation()).GetSafeNormal();
+	
+		movementComp->AddInputVector(Dir);
+		
+		FRotator targetRot = UKismetMathLibrary::FindLookAtRotation(_owned->GetActorLocation(), DestLocation);
+		targetRot.Pitch = 0.f;
+
+		_smoothRot = FMath::RInterpTo(_smoothRot, targetRot, deltaTime, 10.f);
+		
+		_owned->SetActorRotation(_smoothRot);
+
+		/*	UNavigationPath* navPath = UAIBlueprintHelperLibrary::GetCurrentPath(this);
+			UAIBlueprintHelperLibrary::
+			FNavPathSharedPtr ptr = navPath->GetPath();
+			TArray<FNavPathPoint> dd = ptr->GetPathPoints();
+			for (auto& a : dd)
+				UE_LOG(LogTemp, Log, TEXT("Nav Location : %s"), *a.Location.ToString());*/
+
+	}
+	
 }
 
 void AUnitPlayerController::CheckActorOther(AUnitCharacter* other)
@@ -278,7 +343,7 @@ void AUnitPlayerController::CheckActorOther(AUnitCharacter* other)
 }
 
 
-void AUnitPlayerController::ChaseEnemy()
+void AUnitPlayerController::ChaseEnemy(float deltaTime)
 {
 	if (_owned->GetEnemyTarget().IsValid() == false)
 		return;
@@ -290,11 +355,14 @@ void AUnitPlayerController::ChaseEnemy()
 
 	if (dist > 200.f)
 	{
-		SetMoveDest(_owned->GetEnemyTarget().Get()->GetActorLocation());
+		//SetMoveDest(_owned->GetEnemyTarget().Get()->GetActorLocation());
+		//UAIBlueprintHelperLibrary::SimpleMoveToActor(this, _owned->GetEnemyTarget().Get());
+		SetMoveDest(_owned->GetEnemyTarget().Get()->GetActorLocation(), deltaTime);
+
+
 	}
 	else
 	{
-		UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, _owned->GetActorLocation());
 		_owned->AttackEnemy();
 	}
 }
@@ -323,5 +391,14 @@ void AUnitPlayerController::OnMovePressed()
 void AUnitPlayerController::OnMoveReleased()
 {
 	_bClickMouse = false;
+}
+
+void AUnitPlayerController::OpenDeadPanel()
+{
+	_deadPanelUI = CreateWidget<UDeadPanelWidget>(this, _deadPanelClass);
+	_deadPanelUI->AddToViewport();
+
+	_deadPanelUI->InitUI(this);
+
 }
 

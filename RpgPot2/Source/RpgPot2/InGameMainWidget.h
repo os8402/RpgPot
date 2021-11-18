@@ -32,5 +32,5 @@ private:
 	class UProgressBar* _PB_MpGauge;
 
 	TWeakObjectPtr<class UStatDataComponent> _currentStatComp;
-	
+
 };

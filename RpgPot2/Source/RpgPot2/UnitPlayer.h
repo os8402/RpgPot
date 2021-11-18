@@ -15,6 +15,7 @@ class RPGPOT2_API AUnitPlayer : public AUnitCharacter
 	GENERATED_BODY()
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
 public:
 
@@ -25,6 +26,6 @@ public:
 	virtual void AttackCheck() override;
 
 	virtual void DeadCharacter() override;
-	
+
 
 };

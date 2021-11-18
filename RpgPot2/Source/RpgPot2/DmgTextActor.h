@@ -23,12 +23,16 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	void UpdateDamage(int32 dmg);
+	void UpdateDamage(int32 dmg , FLinearColor color);
 
 private : 
 
 	UPROPERTY(VisibleAnywhere)
 	class UWidgetComponent* _dmgText;
+
+	UPROPERTY(VisibleAnywhere)
+	class UStaticMeshComponent* _meshComp;
+
 
 	float _curTime = 0.f;
 	float _destroyTime = 1.f;

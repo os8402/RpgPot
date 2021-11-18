@@ -4,20 +4,27 @@
 #include "DmgTextActor.h"
 #include <Components/WidgetComponent.h>
 #include "DmgTextWidget.h"
+#include <Components/CapsuleComponent.h>
 
 
 // Sets default values
 ADmgTextActor::ADmgTextActor()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+ 
 	PrimaryActorTick.bCanEverTick = true;
+	USceneComponent* defalutRoot = CreateDefaultSubobject<USceneComponent>(TEXT("ROOT_COMP"));
 
-	//RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("ROOT_COMP"));
+	RootComponent = defalutRoot;
 
+	_meshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MESH"));
+	_meshComp->SetupAttachment(defalutRoot);
+	_meshComp->SetRelativeLocation(FVector::ZeroVector);
 
 	_dmgText = CreateDefaultSubobject<UWidgetComponent>(TEXT("DMG_TEXT"));
-	//_dmgText->SetupAttachment();
+	_dmgText->SetupAttachment(_meshComp);
 	_dmgText->SetWidgetSpace(EWidgetSpace::Screen);
+	_dmgText->SetRelativeLocation(FVector(200.f, 0.f , 0.f));
+
 
 	static ConstructorHelpers::FClassFinder<UUserWidget> UW(TEXT("WidgetBlueprint'/Game/Blueprints/Widget/WBP_DmgText.WBP_DmgText_C'"));
 
@@ -53,9 +60,9 @@ void ADmgTextActor::Tick(float DeltaTime)
 
 }
 
-void ADmgTextActor::UpdateDamage(int32 dmg)
+void ADmgTextActor::UpdateDamage(int32 dmg, FLinearColor color)
 {
 	auto dmgWidget = Cast<UDmgTextWidget>(_dmgText->GetUserWidgetObject());
-	dmgWidget->UpdateText(dmg);
+	dmgWidget->UpdateText(dmg, color);
 }
 
