@@ -11,7 +11,7 @@
 
 AUnitPlayer::AUnitPlayer()
 {
-
+	SetActorRelativeLocation(FVector(0.f, 0.f, 100.f));
 
 }
 
@@ -22,6 +22,7 @@ void AUnitPlayer::Tick(float DeltaTime)
 
 	SearchActorInfo();
 
+	
 }
 
 float AUnitPlayer::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)

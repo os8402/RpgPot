@@ -176,8 +176,6 @@ void AUnitCharacter::Tick(float DeltaTime)
 
 }
 
-
-
 void AUnitCharacter::AttackEnemy()
 {
 	if (_bAttacking)
@@ -213,7 +211,6 @@ void AUnitCharacter::AttackCheck()
 
 	if (_enemyTarget.IsValid())
 	{
-
 		if (_enemyTarget.Get()->GetFSMState() == GameStates::DEAD)
 			return;
 
@@ -238,16 +235,11 @@ float AUnitCharacter::TakeDamage(float Damage, struct FDamageEvent const& Damage
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 
-	FVector  spawnLocation = GetActorLocation();
-	//spawnLocation.Z += 200.f;
-	
+	FVector  spawnLocation = GetActorLocation();	
 	FRotator spawnRotator = DamageCauser->GetActorRotation();
 
 	_currentDmgActor = Cast<ADmgTextActor>(
 		GetWorld()->SpawnActor<AActor>(_dmgActor, spawnLocation, spawnRotator, SpawnParams));
-
-	//_currentDmgActor->UpdateDamage(Damage);
-
 
 	VisibleHpBar();
 
@@ -257,6 +249,9 @@ float AUnitCharacter::TakeDamage(float Damage, struct FDamageEvent const& Damage
 
 void AUnitCharacter::VisibleHpBar()
 {
+	if (_gameState == GameStates::DEAD)
+		return;
+
 	UWorld* world = GetWorld();
 
 	world->GetTimerManager().ClearTimer(_hpBarTimerHandle);
@@ -280,11 +275,11 @@ void AUnitCharacter::ChangeMinimapColor(FLinearColor color)
 
 void AUnitCharacter::DeadCharacter()
 {
-	_hpBar->SetVisibility(false);
-	_outLineMesh->SetVisibility(false);
-
 	GetWorld()->GetTimerManager().ClearTimer(_hpBarTimerHandle);
 
+
+	_hpBar->SetVisibility(false);
+	_outLineMesh->SetVisibility(false);
 
 	//TODO : 마을 부활 or 게임 끝내기 
 }
@@ -316,7 +311,7 @@ void AUnitCharacter::SetFSMState(GameStates newState)
 {
 
 	_gameState = newState;
-
+	
 	switch (_gameState)
 	{
 	case AUnitCharacter::IDLE:

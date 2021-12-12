@@ -12,7 +12,7 @@
 
 AUnitMonster::AUnitMonster()
 {
-
+	SetActorRelativeLocation(FVector(0.f, 0.f, 100.f));
 }
 
 
@@ -20,7 +20,7 @@ float AUnitMonster::TakeDamage(float Damage, struct FDamageEvent const& DamageEv
 {
 	float dmg = Super::TakeDamage(Damage , DamageEvent , EventInstigator, DamageCauser);
 
-	FLinearColor color = FLinearColor::Red;
+	FLinearColor color = FLinearColor::White;
 
 	_currentDmgActor->UpdateDamage(dmg, color);
 

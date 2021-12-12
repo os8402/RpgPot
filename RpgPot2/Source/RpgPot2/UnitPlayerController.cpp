@@ -101,8 +101,11 @@ void AUnitPlayerController::BeginPlay()
 
 	if (_ingameMainUI)
 	{
-		_ingameMainUI->BindHp(_owned->GetStatComp());
-		_ingameMainUI->UpdateHp();
+
+		//_owned = Cast<AUnitPlayer>(GetCharacter());
+
+		//_ingameMainUI->BindHp(_owned->GetStatComp());
+		//_ingameMainUI->UpdateHp();
 	}
 
 
